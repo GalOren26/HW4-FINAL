@@ -286,7 +286,7 @@ static DWORD ServiceThread(int me)
 	{
 		char* AcceptedStr = NULL;
 		message* lp_message = NULL;
-		RecvRes = ReceiveString(&AcceptedStr, *t_socket);
+		RecvRes = ReceiveString(&AcceptedStr, *t_socket,30000);
 
 		if (RecvRes == TRNS_FAILED)
 		{
@@ -341,7 +341,6 @@ static DWORD ServiceThread(int me)
 				int res = WaitForSingleObjectWrap(readerEvent, 15 * 1000);
 				if (res != SUCCESS) {
 					ResetEvent(writterEvent);	
-					.	`-+
 
 					SendString("SERVER_NO_OPPONENTS", *t_socket);
 					SendString("SERVER_MAIN_MENU", *t_socket);

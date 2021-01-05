@@ -39,6 +39,9 @@
     <ClCompile Include="..\Shared\Functions.c">
       <Filter>Shared Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="game.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Shared\threads.h">
@@ -58,6 +61,9 @@
     </ClInclude>
     <ClInclude Include="..\Shared\Functions.h">
       <Filter>Shared Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

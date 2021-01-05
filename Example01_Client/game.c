@@ -4,9 +4,8 @@
 #include <ctype.h>
 #include "game.h"
 #define guess_size 4
-#define choise_size 1
-//char number[5];
-//char guess[5];
+#define choice_size 1
+
 
 int playerChoice() {
 	char* choice = NULL, decision = NULL;
@@ -63,9 +62,9 @@ int otherPlayerQuit(char* message) {
 	else
 		return CONTINUE;
 }
-int menu(int menu, int portNumber, char* ip) {
+int showMenu(int choose, int portNumber, char ip) {
 	int decision;
-	switch (menu) {
+	switch (choose) {
 	case MAIN:
 		printf("Choose what to do next:\n");
 		printf("1. Play against another client\n");

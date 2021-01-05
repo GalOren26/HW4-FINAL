@@ -24,6 +24,7 @@
 int MainClient(int argc, char* argv[] );
 
 int ConnectToServerWithUI(SOCKET *my_socket, SOCKADDR* my_clientService, int SizeOfclientService);
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
+static DWORD SendDataThread(void);
+static DWORD RecvDataThread(void);
 
 #endif // SOCKET_EXA MPLE_CLIENT_H

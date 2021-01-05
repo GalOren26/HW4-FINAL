@@ -121,6 +121,7 @@
     <ClCompile Include="..\Shared\threads.c" />
     <ClCompile Include="Client.c" />
     <ClCompile Include="client_main.c" />
+    <ClCompile Include="game.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Shared\Functions.h" />
@@ -129,6 +130,7 @@
     <ClInclude Include="..\Shared\Socket.h" />
     <ClInclude Include="..\Shared\threads.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
