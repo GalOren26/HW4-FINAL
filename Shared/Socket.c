@@ -1,6 +1,7 @@
 
 
 #include "Socket.h"
+
 int Init_WinSocket(WSADATA* lp_wsa_data) {
 
 	int result;
@@ -52,7 +53,7 @@ TransferResult_t SendString(const char* Str, SOCKET sd)
 
 	return SendRes;
 }
-TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
+TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd, int time)
 {
 	/* Recv the the request to the server on socket sd */
 	int TotalStringSizeInBytes;
@@ -74,7 +75,7 @@ TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
 	RecvRes = ReceiveBuffer(
 		(char*)(&TotalStringSizeInBytes),
 		(int)(sizeof(TotalStringSizeInBytes)), // 4 bytes
-		sd);
+		sd,time);
 
 	if (RecvRes != TRNS_SUCCEEDED) return RecvRes;
 
@@ -86,7 +87,7 @@ TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
 	RecvRes = ReceiveBuffer(
 		(char*)(StrBuffer),
 		(int)(TotalStringSizeInBytes),
-		sd);
+		sd,time);
 
 	if (RecvRes == TRNS_SUCCEEDED)
 	{
@@ -99,14 +100,14 @@ TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
 
 	return RecvRes;
 }
-TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd)
+TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd, int time)
 {
 	char* CurPlacePtr = OutputBuffer;
 	int BytesJustTransferred;
 	int RemainingBytesToReceive = BytesToReceive;
+	struct timeval waitTime = { time, 0 };
+	setsockopt(sd, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*) & waitTime, sizeof(struct timeval));
 
-	while (RemainingBytesToReceive > 0)
-	{
 		/* send does not guarantee that the entire message is sent */
 		BytesJustTransferred = recv(sd, CurPlacePtr, RemainingBytesToReceive, 0);
 		if (BytesJustTransferred == SOCKET_ERROR)
@@ -119,7 +120,6 @@ TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd
 
 		RemainingBytesToReceive -= BytesJustTransferred;
 		CurPlacePtr += BytesJustTransferred; // <ISP> pointer arithmetic
-	}
 
 	return TRNS_SUCCEEDED;
 }
