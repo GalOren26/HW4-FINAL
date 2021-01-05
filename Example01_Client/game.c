@@ -37,24 +37,21 @@ int playerChoice() {
 }
 //////
 
-void gameResults(game_status* message, int status) {
+void gameResults(game_results* results, int game_status) {
+	if (game_status == GAME) {
+		printf("Bulls: %c\n", results->bulls);
+		printf("Cows: %c\n", results->cows);
+		printf("%s played: %s\n", results->oponent_name, results->opponent_move);
 
-	if (TIE == status) {
+	}
+	if (game_status == TIE) {
 		printf("It's a tie");
 		return;
 	}
-	if (MID_GAME == status) {
-		printf("Bulls: %c\n", message->bulls);
-		printf("Cows: %c\n", message->cows);
-		printf("%s played: %s\n", message->username, message->guess);
-
+	if (game_status == WIN) {
+		printf("%s won!\n", results->player);
+		printf("Opponent number was %s\n", results->player_move);
 	}
-	else if (WIN == status) {
-		printf("%s won!\n", message->username);
-		printf("Opponent number was %s\n", message->guess);
-	}
-	free(message->username);
-	free(message->guess);
 }
 ///////
 
@@ -152,7 +149,7 @@ void countBullsAndCows(char* number, char* guess, int* bulls, int* cows)
     int i;
     // int cows = 0, bulls = 0;
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < guess_size; i++) {
         if (number[i] == guess[i]) {
             (*bulls)++;
         }
