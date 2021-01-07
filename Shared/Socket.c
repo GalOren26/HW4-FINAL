@@ -1,29 +1,8 @@
 
 
 #include "Socket.h"
-int Init_WinSocket(WSADATA* lp_wsa_data) {
-
-	int result;
-
-	// Initialize Winsock
-	result = WSAStartup(MAKEWORD(2, 2), lp_wsa_data);
-	if (result != 0) {
-		printf("WSAStartup failed: %d\n", result);
-		return 0;
-	}
-
-	return 1;
-}
 
 
-int SocketGetLastError() {
-	return WSAGetLastError();
-}
-
-SOCKET createSocket() {
-	return socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
-}
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
@@ -111,7 +90,7 @@ TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd
 		BytesJustTransferred = recv(sd, CurPlacePtr, RemainingBytesToReceive, 0);
 		if (BytesJustTransferred == SOCKET_ERROR)
 		{
-			printf("recv() failed, error %d\n", WSAGetLastError());
+			//printf("recv() failed, error %d\n", WSAGetLastError());
 			return TRNS_FAILED;
 		}
 		else if (BytesJustTransferred == 0)
@@ -135,7 +114,7 @@ TransferResult_t SendBuffer(const char* Buffer, int BytesToSend, SOCKET sd)
 		BytesTransferred = send(sd, CurPlacePtr, RemainingBytesToSend, 0);
 		if (BytesTransferred == SOCKET_ERROR)
 		{
-			printf("send() failed, error %d\n", WSAGetLastError());
+		//	printf("send() failed, error %d\n", WSAGetLastError());
 			return TRNS_FAILED;
 		}
 
@@ -146,7 +125,36 @@ TransferResult_t SendBuffer(const char* Buffer, int BytesToSend, SOCKET sd)
 	return TRNS_SUCCEEDED;
 }
 
-CloseSocketGracefullySender(SOCKET AcceptSocket)
+
+
+
+// ---------------our functions -----------------
+SOCKET createSocket() {
+	WSADATA wsaData;
+	int ret_val=Init_WinSocket(&wsaData); 
+	if (ret_val != SUCCESS)
+		return ret_val; 
+	return socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+}
+int Init_WinSocket(WSADATA* lp_wsa_data) {
+
+	int result;
+
+	// Initialize Winsock
+	result = WSAStartup(MAKEWORD(2, 2), lp_wsa_data);
+	if (result != 0) {
+		printf("WSAStartup failed: %d\n", WSAGetLastError());
+		return 0;
+	}
+
+	return SUCCESS;
+}
+
+int SocketGetLastError() {
+	return WSAGetLastError();
+}
+void CloseSocketGracefullySender(SOCKET AcceptSocket)
 {
 	shutdown(AcceptSocket, SD_SEND);
 	TransferResult_t RecvRes;
@@ -154,11 +162,35 @@ CloseSocketGracefullySender(SOCKET AcceptSocket)
 	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
 	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
 }
-CloseSocketGracefullyReciver(SOCKET AcceptSocket)
+void CloseSocketGracefullyReciver(SOCKET AcceptSocket)
 {
 	char* AcceptedStr = NULL;
 	TransferResult_t RecvRes;
 	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
 	shutdown(AcceptSocket, SD_SEND);	
 	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
+}
+int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service)
+{
+
+	unsigned long Address;
+	int bindRes;
+	Address = inet_addr(SERVER_ADDRESS_STR);
+	if (Address == INADDR_NONE)
+	{
+		printf("The string \"%s\" cannot be converted into an ip address. ending program.\n",
+			SERVER_ADDRESS_STR);
+		return -1;
+	}
+	service->sin_family = AF_INET;
+	service->sin_addr.s_addr = Address;
+	service->sin_port = htons(SERVER_PORT);
+
+	bindRes = bind(*socket, (SOCKADDR*)service, len_of_service);
+	if (bindRes == SOCKET_ERROR)
+	{
+		printf("bind( ) failed with error %ld. Ending program\n", WSAGetLastError());
+		return bindRes;
+	}
+	return SUCCESS;
 }

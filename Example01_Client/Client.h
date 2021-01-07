@@ -12,7 +12,6 @@
 #include "../Shared/HardCodedData.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <winsock2.h>
 #include <string.h>
 #include "messages.h"
 #include "Socket.h"
@@ -22,8 +21,8 @@
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 int MainClient(int argc, char* argv[] );
-
 int ConnectToServerWithUI(SOCKET *my_socket, SOCKADDR* my_clientService, int SizeOfclientService);
+void CleanupWorkersThreadsSocketsClient();
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 #endif // SOCKET_EXA MPLE_CLIENT_H

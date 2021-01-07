@@ -1,29 +1,137 @@
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
-/*
- This file was written for instruction purposes for the
- course "Introduction to Systems Programming" at Tel-Aviv
- University, School of Electrical Engineering.
-Last updated by Amnon Drory, Winter 2011.
- */
- /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 
 #include "Client.h"
 
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
-//HANDLE Send_event;
-SOCKET m_socket;
-SOCKADDR_IN clientService;
+//---resources---
 
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
+SOCKET m_socket=0;
+SOCKADDR_IN clientService;
+//HANDLE Send_event;
+HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
+
+//---synch elements---
+
+
+//---threads declarations--- 
+typedef enum { menu, data }sel;
+sel state;
+
+
+
+
+
+
+
+int MainClient(int argc ,char *argv [] )
+{
+	//int port = atoi(argv[1]);
+
+	//int ret_val = create_event_simple(&Send_event);
+	/*if (ret_val != SUCCESS)
+		return ret_val;*/
+	int ret_val = 0;
+
+	// TO-DO WARP WITH CREATE-SOCKET 
+	WSADATA wsaData; //Create a WSADATA object called wsaData.
+	ret_val = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (ret_val != NO_ERROR)
+	{
+		printf("Error at WSAStartup()\n");
+		goto clean0;
+	}
+
+	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	// Check for errors to ensure that the socket is a valid socket.
+	if (m_socket == INVALID_SOCKET) {
+		ret_val = m_socket;
+		printf("Error at socket(): %ld\n", WSAGetLastError());
+		goto clean1;
+	}
+
+	clientService.sin_family = AF_INET;
+	clientService.sin_addr.s_addr = inet_addr(SERVER_ADDRESS_STR); //Setting the IP address to connect to
+	clientService.sin_port = htons(SERVER_PORT); //Setting the port to connect to.
+
+	ret_val=ConnectToServerWithUI(&m_socket, (SOCKADDR * )(&clientService), sizeof(clientService));
+	if (ret_val != SUCCESS)
+		goto clean11;
+	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
+
+
+	hThread[0] = CreateThreadSimple((LPTHREAD_START_ROUTINE)SendDataThread, NULL, NULL);
+	if (hThread[0] == NULL)
+	{
+		printf("cannot open send Thread\n");
+		goto clean2;
+	}
+	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread,NULL,NULL);
+	if (hThread[1] == NULL)
+	{
+		printf("cannot open recv Thread");
+
+		goto clean2;
+	}
+	//hThread[2] = CreateThreadSimple((LPTHREAD_START_ROUTINE)UIThread, NULL, NULL);
+	//if (hThread[2] == NULL)
+	//{
+	//	printf("cannot open user interface thread.\n");
+	//	goto clean2;
+	//} 
+	ret_val=WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, TRUE);
+	if (ret_val != SUCCESS)
+	{
+		KillThreads(hThread, NumOfClientThreads);
+		goto clean3;	
+	}
+	ret_val = SUCCESS;
+clean3:	// close handles 
+	Close_Threads(NumOfClientThreads, hThread);
+clean2:
+	CloseSocketGracefullySender(m_socket);
+	m_socket = NULL;
+clean11:
+	if (m_socket != NULL)
+		closesocket(m_socket);
+clean1:
+	WSACleanup();
+clean0 : 
+	return ret_val;
+	//return ret_val;
+}
+
+void CleanupWorkersThreadsSocketsClient()
+{
+	int Ind = 0;
+	if (m_socket != 0)
+	{
+	CloseSocketGracefullyReciver(m_socket);
+	m_socket = 0;
+	}
+	for (Ind = 0; Ind < NumOfClientThreads; Ind++)
+	{
+		if (hThread[Ind] != NULL)
+		{
+			// poll to check if thread finished running:
+			DWORD Res = WaitForSingleObject(hThread[Ind], TIME_OUT_THREADS);
+
+			if (Res != WAIT_OBJECT_0)
+			{
+				TerminateThread(ThreadHandles[Ind], -1);
+			}
+			CloseHandle(ThreadHandles[Ind]);
+			ThreadHandles[Ind] = NULL;
+		}
+	}
+}
+
 
 //Reading data coming from the server
 int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService)
 {
-	char SendStr[256];
+	char SendStr[256];//TO DO CHANGE TO CONSR IN MESSAGE 
 	while (1)
 	{
-		if (connect(*my_socket,my_clientService, SizeOfclientService) == SOCKET_ERROR) {
+		if (connect(*my_socket, my_clientService, SizeOfclientService) == SOCKET_ERROR) {
 			printf("Failed to Connect to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
 			printf("Choose what to do next:\n");
 			printf("1. to Try to reconnect\n");
@@ -41,8 +149,9 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 }
 
 
-typedef enum { menu, data }sel;
-sel state;
+
+//to-do change name 
+
 static DWORD RecvDataThread(void)
 {
 	TransferResult_t RecvRes;
@@ -57,7 +166,7 @@ static DWORD RecvDataThread(void)
 			goto clean1;
 		}
 		else if (RecvRes == TRNS_DISCONNECTED)
-		{	
+		{
 			printf("Server disconected \n", SERVER_ADDRESS_STR, SERVER_PORT);
 			RecvRes = ConnectToServerWithUI(&m_socket, &clientService, sizeof(clientService));
 			if (RecvRes != SUCCESS)
@@ -73,7 +182,7 @@ static DWORD RecvDataThread(void)
 			//if type is no oppenent or something 
 			// state = data or whatever
 		}
-	
+
 		free(AcceptedStr);
 
 	}
@@ -83,6 +192,8 @@ clean1:
 }
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
+
+//to-do change name 
 
 //Sending data to the server
 static DWORD SendDataThread(void)
@@ -111,7 +222,7 @@ static DWORD SendDataThread(void)
 
 		if (STRINGS_ARE_EQUAL(SendStr, "quit"))
 			return exit; //"quit" signals an exit from the client side
-		
+
 		SendRes = SendString(SendStr, m_socket);
 		if (SendRes == TRNS_FAILED)
 		{
@@ -119,83 +230,16 @@ static DWORD SendDataThread(void)
 			return SendRes;
 		}
 	}
-	return 1; 
+	return 1;
 }
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 
-int MainClient(int argc ,char *argv [] )
-{
-	//int port = atoi(argv[1]);
 
-	//int ret_val = create_event_simple(&Send_event);
-	/*if (ret_val != SUCCESS)
-		return ret_val;*/
-	int ret_val = 0;
-	HANDLE hThread[NumOfClientThreads];
-	// Initialize Winsock.
-	WSADATA wsaData; //Create a WSADATA object called wsaData.
-	ret_val = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (ret_val != NO_ERROR)
-	{
-		printf("Error at WSAStartup()\n");
-		goto clean1;
-	}
-	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	// Check for errors to ensure that the socket is a valid socket.
-	if (m_socket == INVALID_SOCKET) {
-		ret_val = m_socket;
-		printf("Error at socket(): %ld\n", WSAGetLastError());
-		goto clean1;
-	}
-	//Create a sockaddr_in object clientService and set  values.
-	clientService.sin_family = AF_INET;
-	clientService.sin_addr.s_addr = inet_addr(SERVER_ADDRESS_STR); //Setting the IP address to connect to
-	clientService.sin_port = htons(SERVER_PORT); //Setting the port to connect to.
-	// Call the connect function, passing the created socket and the sockaddr_in structure as parameters. 
-	// Check for general errors.
 
-	ret_val=ConnectToServerWithUI(&m_socket, (SOCKADDR * )(&clientService), sizeof(clientService));
-	if (ret_val != SUCCESS)
-		goto clean1;
-	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
-	//printf("un here");
-	hThread[0] = CreateThreadSimple((LPTHREAD_START_ROUTINE)SendDataThread, NULL, NULL);
-	if (hThread[0] == NULL)
-	{
-		printf("cannot open send Thread\n");
-		WSACleanup();
-		goto clean2;
-	}
-	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread,NULL,NULL);
-	if (hThread[1] == NULL)
-	{
-		printf("cannot open recv Thread");
-		goto clean2;
-	}
-	//hThread[2] = CreateThreadSimple((LPTHREAD_START_ROUTINE)UIThread, NULL, NULL);
-	//if (hThread[2] == NULL)
-	//{
-	//	printf("cannot open user interface thread.\n");
-	//	goto clean2;
-	//} 
-	ret_val=WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, TRUE);
-	if (ret_val != SUCCESS)
-	{
-		KillThreads(hThread, NumOfClientThreads);
-		goto clean3;	
-	}
-	ret_val = SUCCESS;
-clean3:	// close handles 
-	Close_Threads(NumOfClientThreads, hThread);
-clean2:
-	CloseSocketGracefullySender(m_socket);
-clean1:
-	WSACleanup();
-	return ret_val;
-	//return ret_val;
-}
+
+
 
 //
 //
@@ -244,3 +288,4 @@ clean1:
 //
 //	return temp;
 //}
+

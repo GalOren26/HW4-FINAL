@@ -30,14 +30,14 @@
     <ClCompile Include="..\Shared\messages.c">
       <Filter>Shared Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Server.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\Shared\Socket.c">
       <Filter>Shared Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\Shared\Functions.c">
       <Filter>Shared Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.c">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

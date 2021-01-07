@@ -8,14 +8,15 @@ Authors:Amit Herman Raz Rajwan
 #ifndef _THREADS_H_
 #define _THREADS_H_
 #include "HardCodedData.h"
+#include <shlwapi.h>
 #include <windows.h>
 #include <stdio.h>
 
 //Shortcut for ReleaseMutex
 #define release ReleaseMutex
 
-
-
+#define TIME_OUT_THREADS 15*1000 // in ms
+#define NUM_OF_WORKER_THREADS 2
 HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, LPVOID lpParam);
 
@@ -42,12 +43,5 @@ int ReleaseSemphoreWrap(HANDLE semphore, int lReleaseCount);
 int ReleaseMutexeWrap(HANDLE mutex);
 
 int create_event_simple(HANDLE* event);
-
-
-
-
-
-
-
 
 #endif

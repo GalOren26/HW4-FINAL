@@ -119,8 +119,8 @@
     <ClCompile Include="..\Shared\messages.c" />
     <ClCompile Include="..\Shared\Socket.c" />
     <ClCompile Include="..\Shared\threads.c" />
-    <ClCompile Include="server_main.c" />
     <ClCompile Include="Server.c" />
+    <ClCompile Include="server_main.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Shared\Functions.h" />

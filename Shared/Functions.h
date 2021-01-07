@@ -1,12 +1,11 @@
-  
+#ifndef __FUNCTIONS
+#define __FUNCTIONS
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef __Hard_coded_data 
-#define __Hard_coded_data 
 #include "HardCodedData.h"
-#include <Windows.h>
+#include "windows.h"
 
-#endif
+
 
 void CheakArgs(int argc,int excepted_num_of_args);
 /*This function cheak if string is a number - used for validate the value of key in this code */
@@ -69,7 +68,7 @@ the function closes the handles in the array, if not it exit with LastError.
 int FreeHandelsArray(HANDLE* handels, int len);
 
 
-
+#endif
 
 
 //memory mengment 
