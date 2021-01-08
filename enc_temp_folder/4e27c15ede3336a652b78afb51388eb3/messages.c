@@ -60,9 +60,7 @@ void delete_message(message* lp_msg) {
 //	}
 //	return 1;
 //}
-message* parametersToString() {
 
-}
 void MessageToString(message* lp_message, int is_server, char*  string)
 {
 	if (is_server)
