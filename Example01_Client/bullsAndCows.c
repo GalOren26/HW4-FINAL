@@ -64,8 +64,8 @@ int playerChoice() {
 //	else
 //		return CONTINUE;
 //}
-int showMenu(int choose, int portNumber, char ip) {
-	int decision;
+void showMenu(int choose, int portNumber, char ip) {
+	//int decision;
 	switch (choose) {
 	case MAIN:
 		printf("Choose what to do next:\n");
@@ -86,9 +86,8 @@ int showMenu(int choose, int portNumber, char ip) {
 		break;
 	}
 
-	decision = playerChoice();
-	return decision;
-
+	//decision = playerChoice();
+	//return decision;
 }
 int isValid(char* number) {
 	if (!isRightSize(number))

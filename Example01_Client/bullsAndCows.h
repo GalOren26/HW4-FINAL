@@ -17,7 +17,7 @@ void countBullsAndCows(char* number, char* guess, int* bulls, int* cows);
 //void gameResults(game_results* results, int game_status);
 int playerChoice();
 //int otherPlayerQuit(char* message);
-int showMenu(int menu, int portNumber, char ip);
+void showMenu(int menu, int portNumber, char ip);
 //char* chooseNumber();
 void countBullsAndCows(char* number, char* guess, int* bulls, int* cows);
 bool isRightSize(char* guess);

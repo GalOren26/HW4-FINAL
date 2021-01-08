@@ -29,7 +29,8 @@ typedef enum
 
 int MainClient(int argc, char* argv[] );
 int ConnectToServerWithUI(SOCKET *my_socket, SOCKADDR* my_clientService, int SizeOfclientService);
-void CleanupWorkersThreadsSocketsClient();
+//void CleanupWorkersThreadsSocketsClient();
+int exec_protocol(message* msg, SOCKET sender);
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 #endif // SOCKET_EXA MPLE_CLIENT_H

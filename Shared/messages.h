@@ -28,6 +28,9 @@ typedef  enum {
 	SERVER_DRAW,
 	SERVER_NO_OPPONENTS,
 	SERVER_OPPONENT_QUIT,
+	MAIN,
+	FAILURE,
+	DENIED,
 	end
 }ServerMesType;
 typedef  enum {

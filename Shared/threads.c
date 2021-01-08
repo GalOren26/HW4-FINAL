@@ -8,8 +8,6 @@ Authors:Amit Herman Raz Rajwan
 #include "threads.h"
 
 
-
-
 HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, LPVOID lpParam)
 {

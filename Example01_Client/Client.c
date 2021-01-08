@@ -96,30 +96,30 @@ clean0:
 	//return ret_val;
 }
 
-void CleanupWorkersThreadsSocketsClient()
-{
-	int Ind = 0;
-	if (m_socket != 0)
-	{
-		CloseSocketGracefullyReciver(m_socket);
-		m_socket = 0;
-	}
-	for (Ind = 0; Ind < NumOfClientThreads; Ind++)
-	{
-		if (hThread[Ind] != NULL)
-		{
-			// poll to check if thread finished running:
-			DWORD Res = WaitForSingleObject(hThread[Ind], TIME_OUT_THREADS);
-
-			if (Res != WAIT_OBJECT_0)
-			{
-				TerminateThread(ThreadHandles[Ind], -1);
-			}
-			CloseHandle(ThreadHandles[Ind]);
-			ThreadHandles[Ind] = NULL;
-		}
-	}
-}
+//void CleanupWorkersThreadsSocketsClient()
+//{
+//	int Ind = 0;
+//	if (m_socket != 0)
+//	{
+//		CloseSocketGracefullyReciver(m_socket);
+//		m_socket = 0;
+//	}
+//	for (Ind = 0; Ind < NumOfClientThreads; Ind++)
+//	{
+//		if (hThread[Ind] != NULL)
+//		{
+//			// poll to check if thread finished running:
+//			DWORD Res = WaitForSingleObject(hThread[Ind], TIME_OUT_THREADS);
+//
+//			if (Res != WAIT_OBJECT_0)
+//			{
+//				TerminateThread(ThreadHandles[Ind], -1);
+//			}
+//			CloseHandle(ThreadHandles[Ind]);
+//			ThreadHandles[Ind] = NULL;
+//		}
+//	}
+//}
 char* getUserName()
 {
 #define CHUNK 200
@@ -189,39 +189,7 @@ static DWORD RecvDataThread(void)
 		{
 			printf("%s\n", AcceptedStr);
 			new_message = process_Message(AcceptedStr, 0);
-			switch (new_message->ServerType) {
-			case SERVER_MAIN_MENU:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_APPROVED:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_DENIED:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_INVITE:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_SETUP_REQUSET:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_PLAYER_MOVE_REQUEST:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_GAME_RESULTS:
-				exec_protocol(new_message, m_socket);
-				break;
-			case SERVER_WIN:
-				exec_protocol(new_message, m_socket);
-				break;
-			default:
-				//TODO - parse the string to message, check type
-				//if message type is menu
-				//	state = menu
-				//if type is no oppenent or something 
-				// state = data or whatever
-			}
-
+			exec_protocol(new_message, m_socket);
 			free(AcceptedStr);
 
 		}
