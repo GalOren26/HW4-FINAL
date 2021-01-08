@@ -164,16 +164,17 @@ static DWORD ServiceThread(int me)
 	TransferResult_t SendRes;
 	TransferResult_t RecvRes;
 	bool IOpenTheFile = false;
-	strcpy(SendStr, "Welcome to this server!");
-	SendRes = SendString("Welcome to this server!", *t_socket);
-
-	if (SendRes == TRNS_FAILED)
-	{
-		printf("Service socket error while writing to client.\n");
-		SetEvent(FailureEvent[me]);
-		return SendRes;
-	}
 	char* user_name = NULL;
+	//strcpy(SendStr, "Welcome to this server!");
+	//SendRes = SendString("Welcome to this server!", *t_socket);
+
+	//if (SendRes == TRNS_FAILED)
+	//{
+	//	printf("Service socket error while writing to client.\n");
+	//	SetEvent(FailureEvent[me]);
+	//	return SendRes;
+	//}
+
 	//game state machine
 	while (!Done)
 	{
@@ -194,7 +195,7 @@ static DWORD ServiceThread(int me)
 		}
 		else
 		{
-			printf("Got string : %s\n", AcceptedStr);
+			printf("Got string:%s\n", AcceptedStr);
 			lp_message = NULL;
 			lp_message = process_Message(AcceptedStr, IsServer);
 			ManageMessageReceived(lp_message, me, t_socket, &IOpenTheFile);//to do cheak return value and manage it 
@@ -359,7 +360,7 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 	int ret_val2 = 0;
 	int other = (me + 1) % 2;
 
-	if (lp_message->ServerType == CLIENT_REQUEST)
+	if (lp_message->ClientType == CLIENT_REQUEST)
 	{
 
 		strcpy(usernames[me],(const char*) lp_message->message_arguments[0]);
@@ -376,7 +377,7 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 	}
 
 
-	else if (lp_message->ServerType == CLIENT_VERSUS)
+	else if (lp_message->ClientType == CLIENT_VERSUS)
 	{
 		//first player create the file 
 		ret_val1 = WaitForSingleObjectWrap(file_binary_semphore, TIME_OUT_THREADS);
@@ -454,7 +455,9 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 	//strcpy(SendStr, "I don't understand");
 	//}
 	////free(AcceptedStr); //will delete the lp_message data also.
-
+	
+	//to-do delete later 
+	return SUCCESS;
 clean1_mes:
 	free(lp_message);
 	SetEvent(FailureEvent[me]);

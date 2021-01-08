@@ -133,6 +133,10 @@ message* process_Message(const char* message_text, int is_server) {
 	memset(proccessed_message->message_arguments, 0, MAX_NUM_OF_PARAMS * MAX_LEN_OF_PARAM);
 	/* get the message type */
 	lp_params = strchr(tmp_message, ':');
+	if (lp_params != 0)
+	{
+		lp_params++;
+	}
 	//if (lp_params != NULL)//parameterless message type
 	message_type_code = get_message_code(tmp_message, is_server);
 	// one of the messages and has params; 
@@ -148,7 +152,7 @@ message* process_Message(const char* message_text, int is_server) {
 	}
 	else
 	{
-		proccessed_message->ClientType = (ClientMesType)message_type_code;;
+		proccessed_message->ClientType = (ClientMesType)message_type_code;
 		proccessed_message->ServerType = -1;
 	}
 	proccessed_message->num_of_arguments = 0;
@@ -172,3 +176,4 @@ message* process_Message(const char* message_text, int is_server) {
 	}
 	return proccessed_message;
 }
+

@@ -124,7 +124,7 @@ int isValid(char* number) {
 //}
 bool isRightSize(char* guess) {
 	if (guess_size != strlen(guess)) {
-		printf("please insert exactly 4 digits.\n");
+		printf("insert exactly 4 digits. please try again \n");
 		return false;
 	}
 	return true;
@@ -132,7 +132,7 @@ bool isRightSize(char* guess) {
 bool isOnlyDigits(char* number) {
 	for (int i = 0; i < guess_size; i++) {
 		if (!isdigit(number[i])) {
-			printf("Please insert only digits.\n");
+			printf("insert only digits. please try again \n");
 			return false;
 		}
 	}
@@ -145,7 +145,7 @@ bool containsNoDuplicates(char* guess)
 	for (int i = 0; i < strlen(guess) - 1; i++) {
 		for (int j = i + 1; j < strlen(guess); j++) {
 			if (guess[i] == guess[j]) {
-				printf("the number should'nt contain duplicates");
+				printf("the number should'nt contain duplicates , please try again \n");
 				return false;
 			}
 		}
