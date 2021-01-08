@@ -136,6 +136,8 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 			printf("2. to Exit\n");
 			gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
 			if (STRINGS_ARE_EQUAL(SendStr, "2"));
+				my_state = WANTTODISCONNECT;
+				//CloseSocketGracefullySender();
 			return exitUser;
 		}
 		else
@@ -177,17 +179,26 @@ static DWORD RecvDataThread(void)
 		{
 			printf("%s\n", AcceptedStr);
 			new_message = process_Message(AcceptedStr, 0);
+			if ((int)new_message == -1)
+			{
+				goto clean1;
+
+			}
 			exec_protocol(new_message, m_socket);
 			free(AcceptedStr);
+			AcceptedStr = NULL;
 
 		}
 	}
-
+//clean 1 free the product of process_message
 clean1:
-	free(AcceptedStr);
+	if(AcceptedStr != NULL)
+		free(AcceptedStr);
 	return RecvRes;
 }
-
+///
+// if (STRINGS_ARE_EQUAL(SendStr, "quit"))
+//return exit; //"quit" signals an exit from the client side
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
@@ -210,6 +221,19 @@ static DWORD SendDataThread(void)
 	while (1)
 	{
 		gets_s(inputstr, sizeof(SendStr)); //Reading a string from the keyboard
+		
+		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
+		//my_state = WANTTODISCONNECT;
+		if (my_state == MENU) {
+			if (STRINGS_ARE_EQUAL(SendStr, "2")) {
+				my_state == WANTTODISCONNECT;
+				continue;
+			}
+			else if (STRINGS_ARE_EQUAL(SendStr, "1")) {
+				my_state = WANTTOPLAY;
+				continue;
+			}
+		}
 		if (my_state == GetName)
 		{
 			//	user_name = getUserName();
@@ -217,18 +241,31 @@ static DWORD SendDataThread(void)
 			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", inputstr);
 			send_result = SendString(SendStr, m_socket);
 		}
+		else if (my_state == WANTTOPLAY) {
+			sprintf(SendStr, "%s", "CLIENT_VERSUS", inputstr);
+			send_result = SendString(SendStr, m_socket);
+		}
 		else if (my_state == GetSecret)
 		{
 			valid = isValid(&SendStr);
+			if (valid) {
+				sprintf(SendStr, "%s:%s", "CLIENT_SETUP", inputstr);
+				send_result = SendString(SendStr, m_socket);
+			}
 			continue;
 		}
 		else if (my_state == GetGuess)
 		{
 			valid = isValid(&SendStr);
+			if (valid) {
+				sprintf(SendStr, "%s:%s", "CLIENT_PLAYER_MOVE", inputstr);
+				send_result = SendString(SendStr, m_socket);
+			}
 			continue;
 		}
-		else {
-			//to print error and continue;
+		else if (my_state == WANTTODISCONNECT) {
+			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED", inputstr);
+			send_result = SendString(SendStr, m_socket);
 		}
 
 	}
@@ -330,26 +367,30 @@ int exec_protocol(message* msg, SOCKET sender) {
 	switch (msg->ServerType) {
 	case SERVER_MAIN_MENU:
 		showMenu(MAIN, portNumber, ip);
-		my_state = GetName;
+		my_state = MENU;
+		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_APPROVED:
 //		printf("welcome to the game\n");
-		my_state = 
+		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DENIED:
 		//disconnect
 		showMenu(FAILURE, portNumber, ip);
+		//my_state = MENU;
 		break;
 	case SERVER_INVITE:
 		printf("Game is on!\n");
 		break;
 	case SERVER_SETUP_REQUSET:
 		printf("Please choose a 4-digits number, with no duplicates\n");
+		my_state = GetSecret;
 		//number = chooseNumber();
 		//SendString(number, sender);
 		break;
 	case SERVER_PLAYER_MOVE_REQUEST:
 		printf("Please choose your guess!\n");
+		my_state = GetGuess;
 		//number = chooseNumber();
 		//SendString(number, sender);
 		break;
@@ -358,12 +399,14 @@ int exec_protocol(message* msg, SOCKET sender) {
 		break;
 	case SERVER_WIN:
 		printf("%s won!\n His sequence was %s\n", msg->message_arguments[0], msg->message_arguments[1]);
+		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DRAW:
 		printf("it's a tie!\n");
 		break;
 	case SERVER_NO_OPPONENTS:
 		printf("we got no other players to play with you.try again later\n");
+		my_state = WANTTOPLAY;
 		break;
 	case SERVER_OPPONENT_QUIT:
 		printf("the other player disconnected.\n");
