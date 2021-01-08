@@ -190,3 +190,15 @@ int ReleaseMutexeWrap(HANDLE mutex)
 	return SUCCESS;
 }
 
+
+void TerminateThreadGracefully(HANDLE * my_thread )
+{
+	int ret_val = 0; 
+	ret_val = WaitForSingleObject(*my_thread, TIME_OUT_THREADS);
+	if (ret_val != WAIT_OBJECT_0)
+	{
+		TerminateThread(*my_thread, -1);
+	}
+	CloseHandle(*my_thread);
+	*my_thread = NULL;
+}

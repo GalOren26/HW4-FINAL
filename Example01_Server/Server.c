@@ -80,11 +80,12 @@ void MainServer(int port)
 		printf("failed create thread %d", GetLastError());
 		goto server_cleanup_2;
 	}
+
 	FailureThreadHandle = CreateThreadSimple((LPTHREAD_START_ROUTINE)FailureThread, NULL,0 );
 	if (FailureThreadHandle == NULL)
 	{
-		CloseHandle(FailureThreadHandle);
 		printf("failed create thread %d", GetLastError());
+		TerminateThreadGracefully(&ExitThreadHandle);
 		goto server_cleanup_2;
 	}
 
@@ -122,13 +123,12 @@ void MainServer(int port)
 				printf("failed create thread %d", GetLastError());
 				goto server_cleanup_3;
 			}
-
-
 		}
 	}
-
 server_cleanup_3:
 	//clean up all threads and sockets.
+	TerminateThreadGracefully(&ExitThreadHandle); 
+	TerminateThreadGracefully(&FailureThreadHandle);
 	CleanupWorkersThreadsSockets();
 server_cleanup_2:
 	if (MainSocket != NULL)
@@ -235,7 +235,7 @@ static DWORD FailureThread()
 				SendString("SERVER_QUIT_OPPONENT", Sockets[other]);
 				SendString("SERVER_MAIN_MENU", Sockets[other]);
 				//ResetEvent(FailureEvent[i]);
-				CloseSocketGracefullySender(Sockets[i]);
+				CloseSocketGracefullyReciver(Sockets[i]);
 			}
 		}
 	}
@@ -427,7 +427,6 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 			free(lp_message);
 			return SUCCESS;
 		}
-
 		//2 players in the game
 		message invite;
 		invite.ServerType = SERVER_INVITE;
@@ -457,8 +456,8 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 	////free(AcceptedStr); //will delete the lp_message data also.
 
 clean1_mes:
-	SetEvent(FailureEvent[me]);
 	free(lp_message);
+	SetEvent(FailureEvent[me]);
 	return ret_val1;
 }
 

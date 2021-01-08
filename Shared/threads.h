@@ -31,6 +31,7 @@ void KillThreads(HANDLE h_Threads[], int num_of_threads);
 int WaitForSingleObjectWrap(HANDLE handle, uli time_ms);
 //Warp for WaitForMultipleObjectsWra if not succed return correspnding error code 
 int WaitForMultipleObjectsWrap(uli num_of_threads, HANDLE* handle_arr, uli time_ms, BOOL bWaitAll);
+void TerminateThreadGracefully(HANDLE* my_thread);
 //------------------semphoros and mutex-- 
 //Warp for  CreateSemphore if not succed return correspnding error code 
 int CreateSemphoreWrap(int max_count, HANDLE* OUT semphore, int initialcount);
@@ -43,5 +44,6 @@ int ReleaseSemphoreWrap(HANDLE semphore, int lReleaseCount);
 int ReleaseMutexeWrap(HANDLE mutex);
 
 int create_event_simple(HANDLE* event);
+
 
 #endif
