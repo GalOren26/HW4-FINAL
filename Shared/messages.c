@@ -128,7 +128,7 @@ message* process_Message(const char* message_text, int is_server) {
 	ret_val = CheckAlocation(proccessed_message);
 	if (ret_val != SUCCESS)
 	{
-		return ret_val;
+		return -1;
 	}
 	memset(proccessed_message->message_arguments, 0, MAX_NUM_OF_PARAMS * MAX_LEN_OF_PARAM);
 	/* get the message type */
