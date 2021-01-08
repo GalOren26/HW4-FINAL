@@ -34,7 +34,7 @@
 
 void MainServer(int port);
 int FindFirstUnusedThreadSlot();
-void CleanupWorkersThreadsSockets();
+void CleanupWorkersThreads();
 int InitSyncElements();
 //ClientMesType FindMeesageType(message* ClientMes, int is_server);
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/

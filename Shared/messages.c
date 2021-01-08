@@ -61,24 +61,7 @@ void delete_message(message* lp_msg) {
 //	return 1;
 //}
 
-void MessageToString(message* lp_message, int is_server, char*  string)
-{
-	if (is_server)
-	{
-		strcpy(string,server_messages[lp_message->ServerType]);
-	}
-	else
-	{
-		strcpy(string, server_messages[lp_message->ClientType]);
-	}
-	strcat(string, ":");
-	for (int i = 0; i < lp_message->num_of_arguments;i++)
-	{
-		strcat(string, lp_message->message_arguments[i]);
-		strcat(string, ";");
-	}
-	string[strlen(string) - 1] = '\0';//delete the last ; 
-}
+
 
 
 /*	Utility functions that support other function for general things	*/
