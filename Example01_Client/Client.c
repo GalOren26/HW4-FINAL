@@ -190,7 +190,7 @@ static DWORD RecvDataThread(void)
 
 		}
 	}
-
+//clean 1 free the product of process_message
 clean1:
 	if(AcceptedStr != NULL)
 		free(AcceptedStr);
@@ -221,6 +221,19 @@ static DWORD SendDataThread(void)
 	while (1)
 	{
 		gets_s(inputstr, sizeof(SendStr)); //Reading a string from the keyboard
+		
+		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
+		//my_state = WANTTODISCONNECT;
+		if (my_state == MENU) {
+			if (STRINGS_ARE_EQUAL(SendStr, "2")) {
+				my_state == WANTTODISCONNECT;
+				continue;
+			}
+			else if (STRINGS_ARE_EQUAL(SendStr, "1")) {
+				my_state = WANTTOPLAY;
+				continue;
+			}
+		}
 		if (my_state == GetName)
 		{
 			//	user_name = getUserName();
@@ -354,7 +367,8 @@ int exec_protocol(message* msg, SOCKET sender) {
 	switch (msg->ServerType) {
 	case SERVER_MAIN_MENU:
 		showMenu(MAIN, portNumber, ip);
-		my_state = WANTTOPLAY;
+		my_state = MENU;
+		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_APPROVED:
 //		printf("welcome to the game\n");
@@ -363,6 +377,7 @@ int exec_protocol(message* msg, SOCKET sender) {
 	case SERVER_DENIED:
 		//disconnect
 		showMenu(FAILURE, portNumber, ip);
+		//my_state = MENU;
 		break;
 	case SERVER_INVITE:
 		printf("Game is on!\n");
