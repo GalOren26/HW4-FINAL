@@ -345,8 +345,8 @@ int exec_protocol(message* msg, SOCKET sender) {
 	char* temp = NULL;
 	char* number = NULL;
 	char* sequence = NULL;
-	char type = (char)msg->ServerType;
-	switch (type) {
+	//char type = (char)(msg->ServerType);
+	switch (msg->ServerType) {
 	case SERVER_MAIN_MENU:
 		showMenu(MAIN, portNumber, ip);
 		break;
@@ -391,28 +391,28 @@ int exec_protocol(message* msg, SOCKET sender) {
 	}
 }
 
-int name_length(message* msg, int start_index) {
-	int length;
-	for (int i = start_index; msg->message_arguments[i] != ','; i++) {
-		length++;
-	}
-	return length;
-}
-void get_sequence(message* msg, char* guess, int number_of_commas_to_count) {
-	int flag = 1;
-	int comma_counter = 0;
-	int i, j, k;
+//int name_length(message* msg, int start_index) {
+//	int length;
+//	for (int i = start_index; msg->message_arguments[i] != ','; i++) {
+//		length++;
+//	}
+//	return length;
+//}
+//void get_sequence(message* msg, char* guess, int number_of_commas_to_count) {
+//	int flag = 1;
+//	int comma_counter = 0;
+//	int i, j, k;
 	//char guess[5] = NULL;
-	for (i = 0; comma_counter != number_of_commas_to_count; i++) {
-		if (msg->message_arguments[i] == ',')
-			comma_counter += 1;
-	}
-	for (int j = i + 1; msg->message_arguments[j] != '\0'; j++, k++) {
-		guess[k] = msg->message_arguments[j];
-	}
-	guess[k + 1] = '\0';
-	return guess;
-}
+//	for (i = 0; comma_counter != number_of_commas_to_count; i++) {
+//		if (msg->message_arguments[i] == ',')
+//			comma_counter += 1;
+//	}
+//	for (int j = i + 1; msg->message_arguments[j] != '\0'; j++, k++) {
+//		guess[k] = msg->message_arguments[j];
+//	}
+//	guess[k + 1] = '\0';
+//	return guess;
+//}
 	/////
 //////////////////////////
 /////////////////////////

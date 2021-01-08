@@ -39,6 +39,9 @@
     <ClCompile Include="..\Shared\Functions.c">
       <Filter>Shared Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="bullsAndCows.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Shared\threads.h">
@@ -57,6 +60,9 @@
       <Filter>Shared Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Shared\Functions.h">
+      <Filter>Shared Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bullsAndCows.h">
       <Filter>Shared Header Files</Filter>
     </ClInclude>
   </ItemGroup>
