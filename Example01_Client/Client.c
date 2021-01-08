@@ -9,7 +9,8 @@ HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
 
 //---synch elements---
 
-
+static DWORD RecvDataThread(void);
+static DWORD SendDataThread(void);
 //---threads declarations--- 
 
 
