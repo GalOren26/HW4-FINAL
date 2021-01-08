@@ -136,6 +136,8 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 			printf("2. to Exit\n");
 			gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
 			if (STRINGS_ARE_EQUAL(SendStr, "2"));
+				my_state = WANTTODISCONNECT;
+				//CloseSocketGracefullySender();
 			return exitUser;
 		}
 		else
@@ -194,7 +196,9 @@ clean1:
 		free(AcceptedStr);
 	return RecvRes;
 }
-
+///
+// if (STRINGS_ARE_EQUAL(SendStr, "quit"))
+//return exit; //"quit" signals an exit from the client side
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
