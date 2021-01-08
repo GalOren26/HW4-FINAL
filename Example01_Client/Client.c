@@ -1,10 +1,8 @@
-
-
 #include "Client.h"
-
+#include "bullsAndCows.h"
 //---resources---
 
-SOCKET m_socket=0;
+SOCKET m_socket = 0;
 SOCKADDR_IN clientService;
 //HANDLE Send_event;
 HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
@@ -13,17 +11,12 @@ HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
 
 
 //---threads declarations--- 
-typedef enum { menu, data }sel;
-sel state;
 
 
-
-
-
-
-
-int MainClient(int argc ,char *argv [] )
+int MainClient(int argc, char* argv[])
 {
+	char* user_name = NULL;
+	TransferResult_t send_result;
 	//int port = atoi(argv[1]);
 
 	//int ret_val = create_event_simple(&Send_event);
@@ -52,7 +45,7 @@ int MainClient(int argc ,char *argv [] )
 	clientService.sin_addr.s_addr = inet_addr(SERVER_ADDRESS_STR); //Setting the IP address to connect to
 	clientService.sin_port = htons(SERVER_PORT); //Setting the port to connect to.
 
-	ret_val=ConnectToServerWithUI(&m_socket, (SOCKADDR * )(&clientService), sizeof(clientService));
+	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService));
 	if (ret_val != SUCCESS)
 		goto clean11;
 	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
@@ -64,7 +57,7 @@ int MainClient(int argc ,char *argv [] )
 		printf("cannot open send Thread\n");
 		goto clean2;
 	}
-	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread,NULL,NULL);
+	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread, NULL, NULL);
 	if (hThread[1] == NULL)
 	{
 		printf("cannot open recv Thread");
@@ -77,13 +70,17 @@ int MainClient(int argc ,char *argv [] )
 	//	printf("cannot open user interface thread.\n");
 	//	goto clean2;
 	//} 
-	ret_val=WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, TRUE);
+	ret_val = WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, TRUE);
 	if (ret_val != SUCCESS)
 	{
 		KillThreads(hThread, NumOfClientThreads);
-		goto clean3;	
+		goto clean3;
 	}
 	ret_val = SUCCESS;
+	
+	////must remember to free user_name
+
+
 clean3:	// close handles 
 	Close_Threads(NumOfClientThreads, hThread);
 clean2:
@@ -94,7 +91,7 @@ clean11:
 		closesocket(m_socket);
 clean1:
 	WSACleanup();
-clean0 : 
+clean0:
 	return ret_val;
 	//return ret_val;
 }
@@ -104,8 +101,8 @@ void CleanupWorkersThreadsSocketsClient()
 	int Ind = 0;
 	if (m_socket != 0)
 	{
-	CloseSocketGracefullyReciver(m_socket);
-	m_socket = 0;
+		CloseSocketGracefullyReciver(m_socket);
+		m_socket = 0;
 	}
 	for (Ind = 0; Ind < NumOfClientThreads; Ind++)
 	{
@@ -123,7 +120,21 @@ void CleanupWorkersThreadsSocketsClient()
 		}
 	}
 }
-
+char* getUserName()
+{
+#define CHUNK 200
+	char* input = NULL;
+	char tempbuf[CHUNK];
+	size_t inputlen = 0, templen = 0;
+	do {
+		fgets(tempbuf, CHUNK, stdin);
+		templen = strlen(tempbuf);
+		input = realloc(input, inputlen + templen + 1);
+		strcpy(input + inputlen, tempbuf);
+		inputlen += templen;
+	} while (templen == CHUNK - 1 && tempbuf[CHUNK - 2] != '\n');
+	return input;
+}
 
 //Reading data coming from the server
 int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService)
@@ -155,6 +166,7 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 static DWORD RecvDataThread(void)
 {
 	TransferResult_t RecvRes;
+	message* new_message;
 	char* AcceptedStr;
 	while (1)
 	{
@@ -176,19 +188,47 @@ static DWORD RecvDataThread(void)
 		else
 		{
 			printf("%s\n", AcceptedStr);
-			//TODO - parse the string to message, check type
-			//if message type is menu
-			//	state = menu
-			//if type is no oppenent or something 
-			// state = data or whatever
+			new_message = process_Message(AcceptedStr, 0);
+			switch (new_message->ServerType) {
+			case SERVER_MAIN_MENU:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_APPROVED:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_DENIED:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_INVITE:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_SETUP_REQUSET:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_PLAYER_MOVE_REQUEST:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_GAME_RESULTS:
+				exec_protocol(new_message, m_socket);
+				break;
+			case SERVER_WIN:
+				exec_protocol(new_message, m_socket);
+				break;
+			default:
+				//TODO - parse the string to message, check type
+				//if message type is menu
+				//	state = menu
+				//if type is no oppenent or something 
+				// state = data or whatever
+			}
+
+			free(AcceptedStr);
+
 		}
-
+	clean1:
 		free(AcceptedStr);
-
+		return RecvRes;
 	}
-clean1:
-	free(AcceptedStr);
-	return RecvRes;
 }
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
@@ -199,39 +239,77 @@ clean1:
 static DWORD SendDataThread(void)
 {
 	char SendStr[256];
-	TransferResult_t SendRes;
+	int valid;
+	TransferResult_t send_result;
+	char* user_name = NULL;
 	SendString("CLIENT_REQUEST:gal", m_socket);
+
 	//SendString("CLIENT_VERSUS", m_socket);  
-	//printf("Insert username:");
+	printf("Insert username:\n");
+	state my_state = GetName;
+
 	while (1)
 	{
 		gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
+		if (my_state == GetName)
+		{
+			//	user_name = getUserName();
+				//I need to remember to free user_name
+			send_result = SendString(SendStr, m_socket);
+			my_state++;
+			
+		}
+		else if (my_state == GetSecret)
+		{
+			valid = isValid(&SendStr);
+			while (!valid) {
+				gets_s(SendStr, sizeof(SendStr));
+				valid = isValid(&SendStr);
+			}
+			my_state++;
+		}
+		else if (my_state == GetGuess)
+		{
+			valid = isValid(&SendStr);
+			while (!valid) {
+				gets_s(SendStr, sizeof(SendStr));
+				valid = isValid(&SendStr);
+			}
+			my_state = 0;
+		}
+		else {
+			//to print error and continue;
+		}
+
+	}
+	return 1;
+}
 		//message* user_mes = process_Message(SendStr, 0); //TO-DO DEFINE IS SERVER; 
-		if (state == menu) {
+		//if (state == menu) {
 			//print the menu
 			//get the user input 
 			//get_s() or new state for inputing 
 			//if input is 2
 			//SendString("CLIENT_VERSUS", m_socket);
-		}
+		//}
 		//else if (state == )
-		else if (state == data) {
+		//else if (state == data) {
 
-		}
+		//}
 		//else...
 
-		if (STRINGS_ARE_EQUAL(SendStr, "quit"))
-			return exit; //"quit" signals an exit from the client side
+		//if (STRINGS_ARE_EQUAL(SendStr, "quit"))
+			//return exit; //"quit" signals an exit from the client side
 
-		SendRes = SendString(SendStr, m_socket);
-		if (SendRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			return SendRes;
-		}
-	}
-	return 1;
-}
+		//SendRes = SendString(SendStr, m_socket);
+		//if (SendRes == TRNS_FAILED)
+		//{
+			//printf("Socket error while trying to write data to socket\n");
+			//return SendRes;
+		//}
+	//}
+	//return 1;
+//}
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
@@ -288,4 +366,88 @@ static DWORD SendDataThread(void)
 //
 //	return temp;
 //}
+int exec_protocol(message* msg, SOCKET sender) {
+	int exit = 0;
+	int i = 0;
+	int length;
+	int portNumber = SERVER_PORT;
+	char ip = SERVER_ADDRESS_STR;
+	char* bulls, cows, name;
+	char* temp = NULL;
+	char* number = NULL;
+	char* sequence = NULL;
+	char type = (char)msg->ServerType;
+	switch (type) {
+	case SERVER_MAIN_MENU:
+		showMenu(MAIN, portNumber, ip);
+		break;
+	case SERVER_APPROVED:
+		printf("SERVER_APPROVED");
+		break;
+	case SERVER_DENIED:
+		//disconnect
+		showMenu(FAILURE, portNumber, ip);
+		break;
+	case SERVER_INVITE:
+		printf("Game is on!\n");
+		break;
+	case SERVER_SETUP_REQUSET:
+		printf("Please choose a 4-digits number, with no duplicates");
+		//number = chooseNumber();
+		//SendString(number, sender);
+		break;
+	case SERVER_PLAYER_MOVE_REQUEST:
+		printf("Please choose your guess");
+		//number = chooseNumber();
+		//SendString(number, sender);
+		break;
+	case SERVER_GAME_RESULTS:
+		printf("%s had %s bulls\n, %s cows\n, and he guess %s", msg->message_arguments[2], msg->message_arguments[0] , msg->message_arguments[1], msg->message_arguments[3]);
+		break;
+	case SERVER_WIN:
+		printf("%s won!\n His sequence was %s", msg->message_arguments[0], msg->message_arguments[1]);
+		break;
+	case SERVER_DRAW:
+		printf("it's a tie!");
+		break;
+	case SERVER_NO_OPPONENTS:
+		printf("we got no other players to play with you.try again later");
+		break;
+	case SERVER_OPPONENT_QUIT:
+		printf("the other player disconnected.");
+		break;
+	default:
+		printf("Undifiend message type recieved\n");
+		break;
+	}
+}
+
+int name_length(message* msg, int start_index) {
+	int length;
+	for (int i = start_index; msg->message_arguments[i] != ','; i++) {
+		length++;
+	}
+	return length;
+}
+void get_sequence(message* msg, char* guess, int number_of_commas_to_count) {
+	int flag = 1;
+	int comma_counter = 0;
+	int i, j, k;
+	//char guess[5] = NULL;
+	for (i = 0; comma_counter != number_of_commas_to_count; i++) {
+		if (msg->message_arguments[i] == ',')
+			comma_counter += 1;
+	}
+	for (int j = i + 1; msg->message_arguments[j] != '\0'; j++, k++) {
+		guess[k] = msg->message_arguments[j];
+	}
+	guess[k + 1] = '\0';
+	return guess;
+}
+	/////
+//////////////////////////
+/////////////////////////
+/////////////////////////
+/////////////////////////
+//////////////////////////
 

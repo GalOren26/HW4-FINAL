@@ -17,6 +17,13 @@
 #include "Socket.h"
 #include "threads.h"
 
+typedef enum
+{
+    GetName,
+    GetSecret,
+    GetGuess
+}state;
+
 #define NumOfClientThreads 2
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
