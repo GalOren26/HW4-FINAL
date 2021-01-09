@@ -8,7 +8,7 @@
 HANDLE ThreadHandles[NUM_OF_WORKER_THREADS] = { 0 };
 HANDLE ExitThreadHandle;
 SOCKET Sockets[NUM_OF_WORKER_THREADS] = { 0 };
-bool ServerInitateShutDown = 0;
+bool ServerInitateShutDown = false;
 char usernames[NUM_OF_WORKER_THREADS][MAX_LEN_NAME_PLAYER];
 
 //---synch elements---
@@ -17,13 +17,13 @@ HANDLE new_players_mutex;
 HANDLE fileHandle = NULL;
 HANDLE player1Event;
 HANDLE player2Event;
-HANDLE exitEvent;
 
 //---threads declarations--- 
 
 static DWORD ServiceThread(int me);
 static DWORD InputExitThread(SOCKET* t_socket);
 // threads function 
+int WaitForUser(HANDLE player_event);
 void CleanupWorkersThreads();
 int FindFirstUnusedThreadSlot();
 int InitSyncElements();
@@ -126,7 +126,6 @@ server_cleanup_1:
 	if (WSACleanup() == SOCKET_ERROR)
 		printf("Failed to close Winsocket, error %ld. Ending program.\n", WSAGetLastError());
 server_cleanup_0:
-	CloseHandle(exitEvent);
 	CloseHandle(new_players_mutex);
 	CloseHandle(file_binary_semphore);
 	CloseHandle(player1Event);
@@ -135,13 +134,13 @@ server_cleanup_0:
 
 //Service thread is the thread that opens for each successful client connection and "talks" to the client.
 
-static DWORD ServiceThread(int me)
+static DWORD ServiceThread(int MyIndex)
 {
-	SOCKET* t_socket = &(Sockets[me]);
+	SOCKET* t_socket = &(Sockets[MyIndex]);
 	char SendStr[MAX_LEN_MESSAGE];
-	int other = 0;
-	if (other == me)
-		other = 1;
+	int otherIndex = 0;
+	if (otherIndex == MyIndex)
+		otherIndex = 1;
 
 	BOOL Done = FALSE;
 	TransferResult_t SendRes;
@@ -160,7 +159,7 @@ static DWORD ServiceThread(int me)
 		if (RecvRes == TRNS_FAILED)
 		{
 			ret_val = RecvRes;
-			printf("Service socket error while reading, closing thread.\n");
+			printf("error while reading, closing this thread .\n");
 			Done = true;
 		}
 		else if (RecvRes == TRNS_DISCONNECTED)
@@ -173,7 +172,7 @@ static DWORD ServiceThread(int me)
 		{
 			printf("Got string:%s\n", AcceptedStr);
 			lp_message = process_Message(AcceptedStr, IsServer);
-			ret_val = ManageMessageReceived(lp_message, me, t_socket, &IOpenTheFile);//to do cheak return value and manage it 
+			ret_val = ManageMessageReceived(lp_message, MyIndex, t_socket, &IOpenTheFile);//to do cheak return value and manage it 
 			if (ret_val != SUCCESS)
 				Done = true;
 		}
@@ -192,14 +191,15 @@ static DWORD ServiceThread(int me)
 	}
 
 	printf("Conversation ended.\n");
+	printf("Waiting for a client to connect...\n");
 	if (!ServerInitateShutDown)
 	{
-		int other = (me + 1) % 2;
+		int other = (MyIndex + 1) % 2;
 		SendString("SERVER_QUIT_OPPONENT", Sockets[other]);
 		SendString("SERVER_MAIN_MENU", Sockets[other]);
-		shutdown(Sockets[me], SD_SEND);
+		shutdown(Sockets[MyIndex], SD_SEND);
 	}
-	closesocket(Sockets[me]);
+	closesocket(Sockets[MyIndex]);
 	return ret_val;
 }
 
@@ -212,7 +212,7 @@ static DWORD InputExitThread(SOCKET* t_socket)
 		if (STRINGS_ARE_EQUAL(input_str, "exit"))
 		{
 			printf("quit is received by the server admin, server quit!\n");
-			SetEvent(exitEvent);
+			ServerInitateShutDown = true;
 			closesocket(*t_socket);
 			*t_socket = NULL;
 			break;
@@ -254,6 +254,7 @@ void CleanupWorkersThreads()
 	{
 		if (ThreadHandles[Ind] != NULL)
 		{
+			shutdown(Sockets[Ind], SD_SEND);
 			TerminateThreadGracefully(&ThreadHandles[Ind]);
 		}
 	}
@@ -286,23 +287,23 @@ clean0:
 	return ret_val;
 }
 
-int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* OUT IOpenTheFile)
+int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile)
 {
 	char SendStr[MAX_LEN_MESSAGE];
 	int ret_val1 = 0;
 	int ret_val2 = 0;
-	int other = (me + 1) % 2;
+	int other = (myIndex + 1) % 2;
 
 	if (lp_message->ClientType == CLIENT_REQUEST)
 	{
 
-		strcpy(usernames[me], (const char*)lp_message->message_arguments[0]);
+		strcpy(usernames[myIndex], (const char*)lp_message->message_arguments[0]);
 		ret_val1 = SendString("SERVER_APPROVED", *t_socket);
 		ret_val2 = SendString("SERVER_MAIN_MENU", *t_socket);
 		if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 		{
 			ret_val1 = TRNS_FAILED;
-			printf("Service socket error while reading, closing thread.\n");
+			printf("error while sending, closing thread.\n");
 			return ret_val1;
 		}
 		return SUCCESS;
@@ -352,30 +353,74 @@ int ManageMessageReceived(message* lp_message, int me, SOCKET* t_socket, bool* O
 			if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 			{
 				ret_val1 = TRNS_FAILED;
-				printf("Service socket error while reading, closing thread.\n");
+				printf("error while sending, closing thread.\n");
 				return  ret_val1;
 			}
-			free(lp_message);
 			return SUCCESS;
 		}
 		//2 players in the game
-		sprintf(SendStr, "SERVER_INVITE:%s", usernames[me]);
+		sprintf(SendStr, "SERVER_INVITE:%s", usernames[myIndex]);
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf("Service socket error while reading, closing thread.\n");
+			printf("error while sending, closing thread.\n");
+			return  ret_val1;
+		}
+		sprintf(SendStr, "SERVER_SETUP_REQUSET");
+		ret_val1 = SendString(SendStr, *t_socket);
+		if (ret_val1 == TRNS_FAILED)
+		{
+			printf(" error while sending, closing thread.\n");
 			return  ret_val1;
 		}
 		return SUCCESS;
-
 	}
 	else if (lp_message->ClientType == CLIENT_DISCONNECT)
 	{
 		return CLIENT_DISCONNECT;
 	}
-	return SUCCESS;	
+	else if (lp_message->ClientType == CLIENT_SETUP)
+	{
+		if (myIndex == SecondThread)
+		{
+			ret_val1 = WaitForUser(player1Event);
+			if (ret_val1 != SUCCESS)
+			{	//case of exit by server
+				return ret_val1;
+			}
+		}
+		if (myIndex == FirstThread)
+		{
+			ret_val1 = WaitForUser(player2Event);
+			if (ret_val1 != SUCCESS)
+			{	//case of exit by server
+				return ret_val1;
+			}
+		}
+	}
+
 }
 
+/*
+mutex 
+	write_line_to_file
 
+
+*/
+int WaitForUser(HANDLE player_event ) {
+	int res = 0;
+	while (true)
+	{
+		res=WaitForSingleObject(player_event, TIME_OUT_THREAD/2);
+		if (res == WAIT_OBJECT_0)
+		{
+			return SUCCESS;
+		}
+		else if (ServerInitateShutDown == true)
+		{
+			return exitUser;
+		}
+	}
+}
 
 

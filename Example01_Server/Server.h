@@ -29,7 +29,8 @@
 
 
 #define MAX_LOOPS 3
-
+#define FirstThread 0 
+#define SecondThread 1
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 void MainServer(int port);

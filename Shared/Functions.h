@@ -5,7 +5,7 @@
 #include "HardCodedData.h"
 #include "windows.h"
 
-
+#include "messages.h"
 
 void CheakArgs(int argc,int excepted_num_of_args);
 /*This function cheak if string is a number - used for validate the value of key in this code */

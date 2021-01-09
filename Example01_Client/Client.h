@@ -23,7 +23,8 @@ typedef enum
     WANTTOPLAY,
     GetSecret,
     GetGuess,
-    WANTTODISCONNECT
+    WANTTODISCONNECT,
+    MENU
 }state;
 
 #define NumOfClientThreads 2

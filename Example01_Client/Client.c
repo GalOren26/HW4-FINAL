@@ -220,20 +220,19 @@ static DWORD SendDataThread(void)
 
 	while (1)
 	{
-		gets_s(inputstr, sizeof(SendStr)); //Reading a string from the keyboard
+		gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
 		
 		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
 		//my_state = WANTTODISCONNECT;
 		if (my_state == MENU) {
-			if (STRINGS_ARE_EQUAL(SendStr, "2")) {
+			if (STRINGS_ARE_EQUAL(inputstr, "2")) {
 				my_state == WANTTODISCONNECT;
-				continue;
 			}
-			else if (STRINGS_ARE_EQUAL(SendStr, "1")) {
+			else if (STRINGS_ARE_EQUAL(inputstr, "1")) {
 				my_state = WANTTOPLAY;
-				continue;
 			}
 		}
+
 		if (my_state == GetName)
 		{
 			//	user_name = getUserName();
@@ -371,7 +370,7 @@ int exec_protocol(message* msg, SOCKET sender) {
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_APPROVED:
-//		printf("welcome to the game\n");
+		printf("welcome to the server\n");
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DENIED:
@@ -405,7 +404,7 @@ int exec_protocol(message* msg, SOCKET sender) {
 		printf("it's a tie!\n");
 		break;
 	case SERVER_NO_OPPONENTS:
-		printf("we got no other players to play with you.try again later\n");
+		printf("you got no other players to play with ,please try again later\n");
 		my_state = WANTTOPLAY;
 		break;
 	case SERVER_OPPONENT_QUIT:
