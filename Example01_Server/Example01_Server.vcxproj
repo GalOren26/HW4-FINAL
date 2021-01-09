@@ -115,6 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\Shared\bullsAndCows.c" />
     <ClCompile Include="..\Shared\Functions.c" />
     <ClCompile Include="..\Shared\messages.c" />
     <ClCompile Include="..\Shared\Socket.c" />
@@ -123,6 +124,7 @@
     <ClCompile Include="server_main.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Shared\bullsAndCows.h" />
     <ClInclude Include="..\Shared\Functions.h" />
     <ClInclude Include="..\Shared\HardCodedData.h" />
     <ClInclude Include="..\Shared\messages.h" />

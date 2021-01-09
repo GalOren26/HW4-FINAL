@@ -1,9 +1,10 @@
+
+
+
 #include "Functions.h"
 #include <assert.h>
-#include < stdlib.h >
 
-
-
+#include <stdlib.h>
 // ******** valiation of data and parms ************ 
 
 void CheakArgs(int argc, int excpted_num_of_args)
@@ -116,6 +117,7 @@ int ReadLine(HANDLE input_file, char* line)
 		memset(&line[curser_index - 1], 0, MAX_LEN_MESSAGE - (curser_index - 1));
 		return SUCCESS;
 	}
+	return NOT_VALID_INPUT;
 
 }
 
@@ -166,37 +168,6 @@ int  ReadFileWrap(DWORD len, HANDLE file, char* my_file_buff, DWORD* NumberOfByt
 	return SUCCESS;
 }
 
-int SetEndOfFileWarp(LPCSTR output_path, uli end_pos, DWORD mode)
-{
-	HANDLE output_file;
-	int ret_val = 0;
-	int ret_val2 = 0;
-	OpenFileWrap(output_path, CREATE_ALWAYS, &output_file);
-	ret_val = CheakHandle(output_file);
-	//TODO
-	if (ret_val != SUCCESS)
-	{
-		return ret_val;
-	}
-	// set EOF at the end of the input file 
-	ret_val = SetFilePointer(output_file, end_pos, NULL, mode);
-	if (ret_val == INVALID_SET_FILE_POINTER)
-	{
-		printf("problem with set file-pointer %d \n", GetLastError());
-		CloseHandleWrap(output_file);
-		return ret_val;
-	}
-	ret_val = SetEndOfFile(output_file);
-	if (ret_val == 0)
-	{
-		printf("error with set eof ,error code %d\n", GetLastError());
-	}
-	ret_val2 = CloseHandleWrap(output_file);
-	if (ret_val == 0 || ret_val2 != SUCCESS)
-		return ret_val;
-	return SUCCESS;
-}
-
 int WriteFileWrap(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite)
 {
 	DWORD lpNumberOfBytesRead = 0;
@@ -207,7 +178,35 @@ int WriteFileWrap(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite)
 	}
 	return SUCCESS;
 }
+//write string to file add that string a /n in the end ;
+int WriteLineString(HANDLE input_file, char* line)
+{
+	int len = strlen(line);
+	char* temp_string = NULL;
+	//set eof 
+	int ret_val1= SetEofAccordingToText(input_file, line);
+	if (ret_val1 != SUCCESS)
+	{
+		return ret_val1;
+	}
+	//alocate array in odredr to add \n in the end 
+	temp_string = (char*)calloc(len, sizeof(char)); 
+	ret_val1=CheckAlocation(temp_string);
+	if (ret_val1 != SUCCESS)
+	{
+		return ret_val1; 
+	}
 
+	sprintf_s(temp_string,sizeof(temp_string), "%s\n", line);
+	ret_val1=WriteFileWrap(input_file, line, len);
+	if (ret_val1 != SUCCESS)
+	{
+		return ret_val1;
+	}
+	free(temp_string);
+	return SUCCESS;
+	
+}
 
 int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToMove, DWORD* OUT PositionAfterSet)
 {
@@ -227,9 +226,6 @@ int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToM
 	return SUCCESS;
 }
 
-
-
-
 int SetEofAccordingToText( HANDLE input_file, char* string )
 {
 	int ret_val1 = 0;
@@ -240,10 +236,13 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 	if (ret_val1 != SUCCESS)
 		return ret_val1;
 	//set end of file to the end of file +number of charcters that current therad need to write ,count by len
-	ret_val1 = SetEndOfFileWarp(input_file, len, FILE_END);
-	if (ret_val1 != SUCCESS)
-		return ret_val1;
 
+	ret_val1 = SetEndOfFile(input_file);
+	if (ret_val1 == 0)
+	{
+		printf("error with set eof ,error code %d\n", GetLastError());
+		return ret_val1;
+	}
 	//return cursor to the previous "end of file"
 	ret_val1 = SetFilePointerWrap(input_file, current_poistion, FILE_BEGIN, NULL);
 	if (ret_val1 != SUCCESS)

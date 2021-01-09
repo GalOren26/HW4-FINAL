@@ -2,6 +2,7 @@
 //Description: headers for the message module
 #ifndef _MESSAGES_H
 #define _MESSAGES_H
+#define _WINSOCKAPI_ 
 #include "HardCodedData.h"
 #include <string.h>
 #include <stdio.h>

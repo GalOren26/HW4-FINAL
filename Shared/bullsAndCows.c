@@ -15,7 +15,7 @@ int playerChoice() {
 
 	if (NULL == (choice = malloc(sizeof(char*) * choise_size))) {
 		printf("memory allocation failed (playerChoice).\n");
-		return NULL;
+		return -1;
 	}
 	while (flag) {
 		scanf_s("%s", choice, choise_size);
@@ -64,7 +64,7 @@ int playerChoice() {
 //	else
 //		return CONTINUE;
 //}
-void showMenu(int choose, int portNumber, char ip) {
+void showMenu(int choose, int portNumber, char* ip) {
 	//int decision;
 	switch (choose) {
 	case MAIN:
@@ -142,8 +142,9 @@ bool containsNoDuplicates(char* guess)
 {
 	// If at any iteration we encounter 2
 	// same characters, return false
-	for (int i = 0; i < strlen(guess) - 1; i++) {
-		for (int j = i + 1; j < strlen(guess); j++) {
+	int len = strlen(guess);
+	for (int i = 0; i < len - 1; i++) {
+		for (int j = i + 1; j < len; j++) {
 			if (guess[i] == guess[j]) {
 				printf("the number should'nt contain duplicates , please try again \n");
 				return false;
@@ -152,19 +153,26 @@ bool containsNoDuplicates(char* guess)
 	}
 	return true;
 }
+
 ///we will call countBullsAndCows(number,guess, &bulls, &cows)
-void countBullsAndCows(char* number, char* guess, int* bulls, int* cows)
+bool PlayRoundPlayer(char* number, char* guess, int* OUT bulls, int* OUT  cows,bool ReturnHowManyHits)
 {
 	int i;
-	// int cows = 0, bulls = 0;
-
+	int temp_bulls = 0, temp_cows = 0;
 	for (i = 0; i < guess_size; i++) {
 		if (number[i] == guess[i]) {
-			(*bulls)++;
+			(temp_bulls)++;
 		}
 		else if (strchr(number, guess[i]) != NULL) {
-			(*cows)++;
+			(temp_cows)++;
 		}
 	}
+	if (ReturnHowManyHits)
+	{
+		*cows = temp_cows;
+		*bulls = temp_bulls;
+	}
+	if (temp_bulls == guess_size)
+		return true; 
+	return false; 
 }
-

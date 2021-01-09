@@ -18,26 +18,27 @@
 #include <shlwapi.h>
 #include <ws2tcpip.h>
 #include <windows.h>
-
 //
 #include "Socket.h"
 #include "messages.h"
 #include "threads.h"
 #include "Functions.h"
 #include <stdbool.h> 
-
+#include "bullsAndCows.h"
 
 
 #define MAX_LOOPS 3
 #define FirstThread 0 
 #define SecondThread 1
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
+
+
 
 void MainServer(int port);
 int FindFirstUnusedThreadSlot();
 void CleanupWorkersThreads();
 int InitSyncElements();
-//ClientMesType FindMeesageType(message* ClientMes, int is_server);
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
+
+
+
 
 #endif // SOCKET_EXAMPLE_SERVER_H
