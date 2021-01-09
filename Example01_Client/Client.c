@@ -1,6 +1,12 @@
 #include "Client.h"
 #include "bullsAndCows.h"
 //---resources---
+	//I need to use that :
+////
+	//shutdown(Sockets[MyIndex], SD_SEND);
+//}
+//closesocket(Sockets[MyIndex]);
+////
 
 SOCKET m_socket = 0;
 SOCKADDR_IN clientService;
@@ -48,7 +54,7 @@ int MainClient(int argc, char* argv[])
 
 	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService));
 	if (ret_val != SUCCESS)
-		goto clean11;
+		goto clean2;
 	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
 
 
@@ -56,14 +62,14 @@ int MainClient(int argc, char* argv[])
 	if (hThread[0] == NULL)
 	{
 		printf("cannot open send Thread\n");
-		goto clean2;
+		goto clean3;
 	}
 	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread, NULL, NULL);
 	if (hThread[1] == NULL)
 	{
 		printf("cannot open recv Thread");
 
-		goto clean2;
+		goto clean3;
 	}
 	//hThread[2] = CreateThreadSimple((LPTHREAD_START_ROUTINE)UIThread, NULL, NULL);
 	//if (hThread[2] == NULL)
@@ -75,26 +81,27 @@ int MainClient(int argc, char* argv[])
 	if (ret_val != SUCCESS)
 	{
 		KillThreads(hThread, NumOfClientThreads);
-		goto clean3;
+		goto clean4;
 	}
 	ret_val = SUCCESS;
 
 	////must remember to free user_name
 
 
-clean3:	// close handles 
+
+clean4:	// close handles 
 	Close_Threads(NumOfClientThreads, hThread);
-clean2:
-	CloseSocketGracefullySender(m_socket);
+clean3:
 	m_socket = NULL;
-clean11:
+	//Clean 2 means that the initial connection failed, so only the socket needes to be closed
+clean2:
 	if (m_socket != NULL)
 		closesocket(m_socket);
 clean1:
 	WSACleanup();
 clean0:
 	return ret_val;
-	//return ret_val;
+	
 }
 
 //void CleanupWorkersThreadsSocketsClient()
@@ -137,6 +144,7 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 			gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
 			if (STRINGS_ARE_EQUAL(SendStr, "2"));
 				my_state = WANTTODISCONNECT;
+				
 				//CloseSocketGracefullySender();
 			return exitUser;
 		}
@@ -172,7 +180,7 @@ static DWORD RecvDataThread(void)
 			printf("Server disconected \n", SERVER_ADDRESS_STR, SERVER_PORT);
 			RecvRes = ConnectToServerWithUI(&m_socket, &clientService, sizeof(clientService));
 			if (RecvRes != SUCCESS)
-				goto clean1;
+				goto clean2;
 			printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
 		}
 		else
@@ -190,12 +198,22 @@ static DWORD RecvDataThread(void)
 
 		}
 	}
-//clean 1 free the product of process_message
+	//clean 1 free the product of process_message
 clean1:
-	if(AcceptedStr != NULL)
+	if (AcceptedStr != NULL)
 		free(AcceptedStr);
+	shutdown(m_socket, SD_BOTH);
+	closesocket(m_socket);
+	return RecvRes;
+clean2:
+	if (AcceptedStr != NULL)
+		free(AcceptedStr);
+	shutdown(m_socket, SD_SEND);
 	return RecvRes;
 }
+
+
+
 ///
 // if (STRINGS_ARE_EQUAL(SendStr, "quit"))
 //return exit; //"quit" signals an exit from the client side
@@ -265,6 +283,7 @@ static DWORD SendDataThread(void)
 		else if (my_state == WANTTODISCONNECT) {
 			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED", inputstr);
 			send_result = SendString(SendStr, m_socket);
+			shutdown(m_socket, SD_SEND);
 		}
 
 	}
