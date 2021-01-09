@@ -1,10 +1,10 @@
 #ifndef __FUNCTIONS
 #define __FUNCTIONS
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "HardCodedData.h"
 #include "windows.h"
-
 #include "messages.h"
 
 void CheakArgs(int argc,int excepted_num_of_args);
@@ -25,8 +25,7 @@ int OpenFileWrap(LPCSTR str, DWORD mode, HANDLE* OUT hFile);
 if it does not manage to read it exits with the last error*/
 int  ReadFileWrap(DWORD len, HANDLE file, char* my_file_buff, DWORD* NumberOfBytesRead);
 
-// set EOF at the end of the input file 
-int SetEndOfFileWarp(LPCSTR output_path, uli end_pos, DWORD mode);
+
 
 /*A wrap for the setfilepointer function. the function gets as an input the handle of the file,
 and it moves the file pointer by "pos" bytes acording to the mode given as an input */
@@ -38,12 +37,13 @@ int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToM
 if does not manage to write, it exits with the last error*/
 int WriteFileWrap(HANDLE hFile, LPCVOID  lpBuffer, DWORD  nNumberOfBytesToWrite);
 
+//write single line to file this function add \n at end;
+int WriteLineString(HANDLE input_file, char* line );
+// read line for file and return it in line array 
+int ReadLine(HANDLE input_file, char* line);
 
-int ReadLine(HANDLE input_file, char ** OUT line);
-/*return the  number of line in file  and the places in the file of each  end of line */
-//int read_number_of_line_and_end_of_lines(HANDLE file, PDWORD OUT num_of_lines_out,  OUT uli** p_end_of_lines);
-
-
+// set eof accordint to string 
+int SetEofAccordingToText(HANDLE input_file, char* string);
 
 //--------------------------aray and and handles ------------------------
 
@@ -68,8 +68,6 @@ the function closes the handles in the array, if not it exit with LastError.
 int FreeHandelsArray(HANDLE* handels, int len);
 
 
-#endif
-
 
 //memory mengment 
 //int setup_memory_menagment(memorytracker* out memtracker);
@@ -77,7 +75,7 @@ int FreeHandelsArray(HANDLE* handels, int len);
 //int freeall(memorytracker * memory_traker);
 
 
-
+#endif 
 
 
 

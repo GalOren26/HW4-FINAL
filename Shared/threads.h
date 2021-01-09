@@ -7,6 +7,7 @@ Authors:Amit Herman Raz Rajwan
 
 #ifndef _THREADS_H_
 #define _THREADS_H_
+#define _WINSOCKAPI_ 
 #include "HardCodedData.h"
 #include <shlwapi.h>
 #include <windows.h>

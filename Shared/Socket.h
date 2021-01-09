@@ -9,17 +9,17 @@
 
 #ifndef SOCKET_SEND_RECV_TOOLS_H
 #define SOCKET_SEND_RECV_TOOLS_H
-
+#define _WINSOCKAPI_ 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 #include "HardCodedData.h"
 #pragma comment(lib, "ws2_32.lib")
 #include <stdio.h>
 #include <string.h>
-
-#include <winsock2.h>
-#include <windows.h>
 #include <shlwapi.h>
 #include <ws2tcpip.h>
+#include <winsock2.h>
+#include <windows.h>
+
 //#include "messages.h"
 
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
@@ -94,9 +94,6 @@ TransferResult_t ReceiveString( char** OutputStrPtr, SOCKET sd );
 //------------my functions----------------
 SOCKET createSocket();
 int Init_WinSocket(WSADATA* lp_wsa_data);
-void CloseSocketGracefullySender(SOCKET AcceptSocket);
-void CloseSocketGracefullyReciver(SOCKET AcceptSocket);
-
 int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service);
 
 

@@ -151,25 +151,25 @@ int Init_WinSocket(WSADATA* lp_wsa_data) {
 	return SUCCESS;
 }
 
-int SocketGetLastError() {
-	return WSAGetLastError();
-}
-void CloseSocketGracefullySender(SOCKET AcceptSocket)
-{
-	shutdown(AcceptSocket, SD_SEND);
-	TransferResult_t RecvRes;
-	char* AcceptedStr = NULL;
-	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
-	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
-}
-void CloseSocketGracefullyReciver(SOCKET AcceptSocket)
-{
-	char* AcceptedStr = NULL;
-	TransferResult_t RecvRes;
-	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
-	shutdown(AcceptSocket, SD_SEND);	
-	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
-}
+//int SocketGetLastError() {
+//	return WSAGetLastError();
+//}
+//void CloseSocketGracefullySender(SOCKET AcceptSocket)
+//{
+//	shutdown(AcceptSocket, SD_SEND);
+//	TransferResult_t RecvRes;
+//	char* AcceptedStr = NULL;
+//	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
+//	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
+//}
+//void CloseSocketGracefullyReciver(SOCKET AcceptSocket)
+//{
+//	char* AcceptedStr = NULL;
+//	TransferResult_t RecvRes;
+//	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
+//	shutdown(AcceptSocket, SD_SEND);	
+//	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
+//}
 int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service)
 {
 

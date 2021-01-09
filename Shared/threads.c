@@ -73,7 +73,6 @@ void KillThreads(HANDLE h_Threads[],int num_of_threads) {
 int  create_event_simple(HANDLE * event )// create event
 {
 	HANDLE event_handle;
-	DWORD last_error;
 
 	static const LPSECURITY_ATTRIBUTES P_SECURITY_ATTRIBUTES = NULL;
 	static const BOOL IS_MANUAL_RESET = FALSE; /* Manual-reset event */
