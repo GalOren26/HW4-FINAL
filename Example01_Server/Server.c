@@ -192,7 +192,7 @@ static DWORD ServiceThread(int* me)
 		}
 		if (lp_message != NULL)
 		{
-			free(lp_message);
+			free(lp_message); 
 			lp_message = NULL;
 		}
 
@@ -387,7 +387,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 			printf("error while sending, closing thread.\n\n");
 			return  ret_val1;
 		}
-		sprintf(SendStr, "SERVER_SETUP_REQUSET");
+		sprintf(SendStr,"SERVER_SETUP_REQUSET"); 
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
@@ -417,7 +417,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 				return ret_val1;
 		}
 
-		sprintf(SendStr, "SERVER_SETUP_REQUSET");
+		sprintf(SendStr, "SERVER_PLAYER_MOVE_REQUEST");
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
@@ -477,7 +477,6 @@ int player1_read_write_file(char* input_line, char* header_message, char* OUT ou
 	ret_val1 = WaitForSingleObjectWrap(player2Event, TIME_OUT_THREADS* 10);
 	if (ret_val1 != SUCCESS)
 	{
-		printf("im here2");
 		return ret_val1;
 	}
 
@@ -485,7 +484,6 @@ int player1_read_write_file(char* input_line, char* header_message, char* OUT ou
 	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
 	if (ret_val1 != SUCCESS)
 	{
-		printf("im here3");
 		return ret_val1;
 	}
 
@@ -510,7 +508,6 @@ int player2_read_write_file(char* input_line, char* OUT output_line)
 	ret_val1 = WaitForSingleObjectWrap(player1Event, TIME_OUT_THREADS*10);
 	if (ret_val1 != SUCCESS)
 	{
-		printf("im here4");
 		return ret_val1;
 	}
 	//lock mutex
@@ -518,7 +515,6 @@ int player2_read_write_file(char* input_line, char* OUT output_line)
 	
 	if (ret_val1 != SUCCESS)
 	{
-		printf("im here5");
 		return ret_val1;
 	}
 		

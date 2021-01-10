@@ -132,8 +132,8 @@ int ReadLine(HANDLE input_file, char* line)
 			return ret_val;
 		}
 
-		line[curser_index - 1] = '\0';
-		memset(&line[curser_index - 1], 0, MAX_LEN_MESSAGE - (curser_index - 1));
+		line[curser_index] = '\0';
+		memset(&line[curser_index], 0, MAX_LEN_MESSAGE - (curser_index - 1));
 		return SUCCESS;
 	}
 	return NOT_VALID_INPUT;
@@ -205,6 +205,11 @@ int WriteLineString(HANDLE input_file, char line[])
 	char temp_line[MAX_LEN_MESSAGE + 1] = { 0 };
 	my_strcpy(temp_line, line);
 	temp_line[len] = '\n';
+	int current_poistion;
+	//set file pointer on the current eof 
+	ret_val1 = SetFilePointerWrap(input_file, 0, FILE_END, &current_poistion);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
 	//set eof 
 	ret_val1 = SetEofAccordingToText(input_file, temp_line);
 	if (ret_val1 != SUCCESS)
@@ -216,6 +221,10 @@ int WriteLineString(HANDLE input_file, char line[])
 	{
 		return ret_val1;
 	}
+	//return cursor to the previous "end of file"
+	ret_val1 = SetFilePointerWrap(input_file, current_poistion, FILE_BEGIN, NULL);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
 	return SUCCESS;
 }
 
@@ -245,7 +254,7 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 	uli current_poistion;
 	//set file pointer on the current eof 
 	int len = strlen(string);
-	ret_val1 = SetFilePointerWrap(input_file, 1, FILE_END, &current_poistion);
+	ret_val1 = SetFilePointerWrap(input_file, 0, FILE_END, &current_poistion);
 	if (ret_val1 != SUCCESS)
 		return ret_val1;
 	//set end of file to the end of file +number of charcters that current therad need to write ,count by len

@@ -296,10 +296,10 @@ void exec_protocol(message* msg, SOCKET sender) {
 		//SendString(number, sender);
 		break;
 	case SERVER_GAME_RESULTS:
-		printf("you had \n bulls: %s \n cows: %s \n %s played %s\n\n", msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[2], msg->message_arguments[3]);
+		printf("you get:\nbulls:%s\ncows%s\n\n%s played %s.\n\n", msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[2], msg->message_arguments[3]);
 		break;
 	case SERVER_WIN:
-		printf("%s won!\n His sequence was %s\n\n", msg->message_arguments[0], msg->message_arguments[1]);
+		printf("%s won!\n opponents number was %s\n\n", msg->message_arguments[0], msg->message_arguments[1]);
 		my_state = MENU;
 		break;
 	case SERVER_DRAW:
