@@ -26,7 +26,7 @@ void CleanupWorkersThreads();
 int FindFirstUnusedThreadSlot();
 int InitSyncElements();
 int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket);
-int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile);
+int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile, char  My_Secret[], char Other_Secret[]);
 int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line);
 int player2_read_write_file(char* input_line, char* OUT output_line);
 
@@ -145,6 +145,8 @@ server_cleanup_0:
 
 static DWORD ServiceThread(int* me)
 {
+	char My_Secret[MAX_LEN_MESSAGE] = { 0 };
+	char Other_Secret[MAX_LEN_MESSAGE] = { 0 };
 	TransferResult_t RecvRes;
 	int MyIndex = *me;
 	SOCKET* t_socket = &(Sockets[MyIndex]);
@@ -180,7 +182,7 @@ static DWORD ServiceThread(int* me)
 		{
 			printf("Got string:%s\n\n", AcceptedStr);
 			lp_message = process_Message(AcceptedStr, IsServer);
-			ret_val = ManageMessageReceived(lp_message, MyIndex, t_socket, &IOpenTheFile);//to do cheak return value and manage it 
+			ret_val = ManageMessageReceived(lp_message, MyIndex, t_socket, &IOpenTheFile, My_Secret, Other_Secret);//to do cheak return value and manage it 
 			if (ret_val != SUCCESS)
 				Done = true;
 		}
@@ -302,14 +304,12 @@ clean0:
 
 
 
-int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile)
+int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile,char  My_Secret [], char Other_Secret[])
 {
 	char SendStr[MAX_LEN_MESSAGE];
 	int ret_val1 = 0;
 	int ret_val2 = 0;
 	int other = (myIndex + 1) % 2;
-	static char My_Secret[MAX_LEN_MESSAGE] = { 0 };
-	static char Other_Secret[MAX_LEN_MESSAGE] = { 0 };
 	char headers[MAX_LEN_MESSAGE] = { 0 };
 	static int round = 1;
 	if (lp_message->ClientType == CLIENT_REQUEST)
@@ -551,8 +551,10 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	int statusPlayer2 = 0;
 	int other = (myIndex + 1) % 2;
 	int ret_val1 = 0;
+
+
 	sprintf(Guess, "%s", lp_message->message_arguments[0]);
-	sprintf(header, "----Round%d----", *round++);
+
 	if (myIndex == SecondThread)
 	{
 		ret_val1 = player2_read_write_file(Guess, OtherGuess);
@@ -561,14 +563,15 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	}
 	if (myIndex == FirstThread)
 	{
-		ret_val1 = player1_read_write_file(Guess, OtherGuess, header);
+		sprintf(header, "----Round%d----", *round++);
+		ret_val1 = player1_read_write_file(Guess, header,OtherGuess );
 		if (ret_val1 != SUCCESS)
 			return ret_val1;
 	}
 	//status of first player 
 	statusPlayer1 = PlayRoundPlayer(My_Secret, Guess, &bulls, &cows, true);
 	//status of second  player 
-	statusPlayer2 = PlayRoundPlayer(Other_Secret, Other_Secret, NULL, NULL, false);
+	statusPlayer2 = PlayRoundPlayer(Other_Secret, OtherGuess, NULL, NULL, false);
 	//send game results 
 	sprintf(SendStr, "SERVER_GAME_RESULTS:%d;%d;%s;%s", bulls, cows, usernames[other], OtherGuess);
 	ret_val1 = SendString(SendStr, *t_socket);
