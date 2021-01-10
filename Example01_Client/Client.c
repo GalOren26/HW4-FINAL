@@ -13,8 +13,10 @@ SOCKADDR_IN clientService;
 //HANDLE Send_event;
 HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
 state my_state = GetName;
+bool server_disconecnt = false;
+HANDLE client_decide_what_to_do;
+bool client_decice_exit = false;
 //---synch elements---
-
 static DWORD RecvDataThread(void);
 static DWORD SendDataThread(void);
 //---threads declarations--- 
@@ -22,17 +24,16 @@ static DWORD SendDataThread(void);
 
 int MainClient(int argc, char* argv[])
 {
-	char* user_name = NULL;
-	TransferResult_t send_result;
 	//int port = atoi(argv[1]);
-
 	//int ret_val = create_event_simple(&Send_event);
 	/*if (ret_val != SUCCESS)
 		return ret_val;*/
 	int ret_val = 0;
-
 	// TO-DO WARP WITH CREATE-SOCKET 
 	WSADATA wsaData; //Create a WSADATA object called wsaData.
+	ret_val=create_event_simple(&client_decide_what_to_do);
+		if(ret_val!=SUCCESS)
+			goto clean00;
 	ret_val = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ret_val != NO_ERROR)
 	{
@@ -52,7 +53,7 @@ int MainClient(int argc, char* argv[])
 	clientService.sin_addr.s_addr = inet_addr(SERVER_ADDRESS_STR); //Setting the IP address to connect to
 	clientService.sin_port = htons(SERVER_PORT); //Setting the port to connect to.
 
-	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService));
+	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService), SERVER_PORT, SERVER_ADDRESS_STR);
 	if (ret_val != SUCCESS)
 		goto clean2;
 	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
@@ -67,17 +68,11 @@ int MainClient(int argc, char* argv[])
 	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread, NULL, NULL);
 	if (hThread[1] == NULL)
 	{
+		TerminateThreadGracefully(hThread[0]);
 		printf("cannot open recv Thread");
-
 		goto clean3;
 	}
-	//hThread[2] = CreateThreadSimple((LPTHREAD_START_ROUTINE)UIThread, NULL, NULL);
-	//if (hThread[2] == NULL)
-	//{
-	//	printf("cannot open user interface thread.\n");
-	//	goto clean2;
-	//} 
-	ret_val = WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, TRUE);
+	ret_val = WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, FALSE);
 	if (ret_val != SUCCESS)
 	{
 		KillThreads(hThread, NumOfClientThreads);
@@ -87,22 +82,274 @@ int MainClient(int argc, char* argv[])
 
 	////must remember to free user_name
 
-
-
 clean4:	// close handles 
 	Close_Threads(NumOfClientThreads, hThread);
-clean3:
-	m_socket = NULL;
+clean3://in this case the thared will be close this socket 
+	m_socket = 0;
 	//Clean 2 means that the initial connection failed, so only the socket needes to be closed
 clean2:
 	if (m_socket != NULL)
+	{
+		shutdown(m_socket, SD_BOTH);
 		closesocket(m_socket);
+	}
 clean1:
 	WSACleanup();
 clean0:
+	CloseHandle(client_decide_what_to_do);
+clean00:
 	return ret_val;
-	
+
 }
+
+
+
+//recive data from the server 
+static DWORD RecvDataThread(void)
+{
+	//to -do free message
+	TransferResult_t RecvRes;
+	message* new_message;
+	char* AcceptedStr;
+	while (1)
+	{
+		AcceptedStr = NULL;
+		RecvRes = ReceiveString(&AcceptedStr, m_socket);
+		if (RecvRes == TRNS_FAILED || RecvRes == TRNS_DISCONNECTED)
+		{
+			my_state = MENU;
+			if(client_decice_exit)
+			{
+				goto clean1;
+			}
+			else {
+				server_disconecnt = true;
+				showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+				WaitForSingleObject(client_decide_what_to_do, INFINITE);
+			}
+		}
+		else
+		{
+			printf("%s\n", AcceptedStr);
+			new_message = process_Message(AcceptedStr, 0);
+			if ((int)new_message == -1)
+			{
+				goto clean1;
+
+			}
+			exec_protocol(new_message, m_socket);
+			free(AcceptedStr);
+			AcceptedStr = NULL;
+
+		}
+	}
+	//clean 1 free the product of process_message
+clean1:
+	if (AcceptedStr != NULL)
+		free(AcceptedStr);
+	// Ifr the client Initate close -then first it do shutdown then wait on recive to get shut down back
+	//and after his it 
+	//close the socket otherwise- the server inatiate the shutdown so the client reply with shutdown back and
+	//then close the socket. 
+	if(server_disconecnt)
+		shutdown(m_socket, SD_SEND);
+	closesocket(m_socket);
+	return RecvRes;
+}
+
+
+//Sending data to the server
+static DWORD SendDataThread(void)
+{
+	//to -do free message
+	int ret_val1;
+	char SendStr[MAX_LEN_MESSAGE] = { 0 };
+	char inputstr[MAX_LEN_MESSAGE] = { 0 };
+	int valid;
+	TransferResult_t send_result;
+	char* user_name = NULL;
+	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
+
+	//SendString("CLIENT_VERSUS", m_socket);  
+	printf("Insert username:\n");
+
+	while (1)
+	{
+		gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
+
+		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
+		//my_state = WANTTODISCONNECT;
+		if (my_state == MENU) {
+			if (STRINGS_ARE_EQUAL(inputstr, "2")) {
+				my_state = WANTTODISCONNECT;
+				if (server_disconecnt)
+				{
+					SetEvent(client_decide_what_to_do);
+					client_decice_exit = true;
+					break;
+				}
+				else
+				{
+					server_disconecnt = false;
+					client_decice_exit = true;
+					SetEvent(client_decide_what_to_do);
+					shutdown(m_socket, SD_SEND);
+					break;
+				}
+			}
+			else if (STRINGS_ARE_EQUAL(inputstr, "1")) {
+				if (server_disconecnt)
+				{
+					if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR);
+					{
+						showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+						continue;
+					}
+					server_disconecnt = false;
+					client_decice_exit = false;
+					SetEvent(client_decide_what_to_do);
+					showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
+					continue;
+				}
+
+				my_state = WANTTOPLAY;
+			}
+		}
+
+		//mutex
+		//
+		//change state 
+		if (my_state == GetName)
+		{
+			//	user_name = getUserName();
+			//I need to remember to free user_name
+			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", inputstr);
+			send_result = SendString(SendStr, m_socket);//to do-cheack return value
+		}
+		else if (my_state == WANTTOPLAY) {
+			sprintf(SendStr, "%s", "CLIENT_VERSUS");
+			send_result = SendString(SendStr, m_socket);//to do-cheack return value
+		}
+		else if (my_state == GetSecret)
+		{
+			valid = isValid(&inputstr[0]);
+			if (valid) {
+				sprintf(SendStr, "%s:%s", "CLIENT_SETUP", inputstr);
+				send_result = SendString(SendStr, m_socket);//to do-cheack return value
+			}
+			continue;
+		}
+		else if (my_state == GetGuess)
+		{
+			valid = isValid(&inputstr[0]);
+			if (valid) {
+				sprintf(SendStr, "%s:%s", "CLIENT_PLAYER_MOVE", inputstr);
+				send_result = SendString(SendStr, m_socket);//to do-cheack return value
+			}
+			continue;
+		}
+		else if (my_state == WANTTODISCONNECT) {
+			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED");
+			send_result = SendString(SendStr, m_socket);//to do-cheack return value
+			shutdown(m_socket, SD_SEND);
+		}
+
+	}
+	return 1;
+}
+
+
+void exec_protocol(message* msg, SOCKET sender) {
+	int exit = 0;
+	int i = 0;
+	int portNumber = SERVER_PORT;
+	char ip = SERVER_ADDRESS_STR;
+	//char type = (char)(msg->ServerType);
+	switch (msg->ServerType) {
+	case SERVER_MAIN_MENU:
+		showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
+		my_state = MENU;
+		//my_state = WANTTOPLAY;
+		break;
+	case SERVER_APPROVED:
+		printf("welcome to the server\n\n");
+		//my_state = WANTTOPLAY;
+		break;
+	case SERVER_DENIED:
+		//disconnect
+
+		server_disconecnt = true;
+		showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+		my_state = MENU;
+		break;
+	case SERVER_INVITE:
+		printf("Game is on!\n\n");
+		break;
+	case SERVER_SETUP_REQUSET:
+		printf("Please choose a 4-digits number, with no duplicates!\n\n");
+		my_state = GetSecret;
+		break;
+	case SERVER_PLAYER_MOVE_REQUEST:
+		printf("Please choose your guess!\n");
+		my_state = GetGuess;
+		//number = chooseNumber();
+		//SendString(number, sender);
+		break;
+	case SERVER_GAME_RESULTS:
+		printf("you had \n bulls: %s \n cows: %s \n %s played %s\n\n", msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[2], msg->message_arguments[3]);
+		break;
+	case SERVER_WIN:
+		printf("%s won!\n His sequence was %s\n\n", msg->message_arguments[0], msg->message_arguments[1]);
+		my_state = MENU;
+		break;
+	case SERVER_DRAW:
+		printf("it's a tie:/ \n");
+		break;
+	case SERVER_NO_OPPONENTS:
+		printf("you got no other players to play with ,please try again later\n\n");
+		my_state = MENU;
+		break;
+	case SERVER_OPPONENT_QUIT:
+		printf("the other player disconnected.\n\n");
+		my_state = MENU;
+		break;
+	default:
+		printf("Undifiend message type recieved\n");
+		break;
+	}
+}
+
+
+//connect in loop to server 
+int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService, int portNumber, char* ip)
+{
+	char SendStr[MAX_LEN_MESSAGE];//TO DO CHANGE TO CONSR IN MESSAGE 
+	while (1)
+	{
+		if (connect(*my_socket, my_clientService, SizeOfclientService) == SOCKET_ERROR) {
+			showMenu(FAILURE, portNumber, ip);
+			gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
+			if (STRINGS_ARE_EQUAL(SendStr, "2"))
+			{
+				return exitUser;
+			}
+			else if (STRINGS_ARE_EQUAL(SendStr, "1"))
+			{
+				continue;
+			}
+			//CloseSocketGracefullySender();
+			else {
+				printf(" invalid input please type 1 or 2 ! ;)\n");
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+	return SUCCESS;
+}
+
 
 //void CleanupWorkersThreadsSocketsClient()
 //{
@@ -130,337 +377,6 @@ clean0:
 //}
 
 
-//Reading data coming from the server
-int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService)
-{
-	char SendStr[256];//TO DO CHANGE TO CONSR IN MESSAGE 
-	while (1)
-	{
-		if (connect(*my_socket, my_clientService, SizeOfclientService) == SOCKET_ERROR) {
-			printf("Failed to Connect to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
-			printf("Choose what to do next:\n");
-			printf("1. to Try to reconnect\n");
-			printf("2. to Exit\n");
-			gets_s(SendStr, sizeof(SendStr)); //Reading a string from the keyboard
-			if (STRINGS_ARE_EQUAL(SendStr, "2"));
-				my_state = WANTTODISCONNECT;
-				
-				//CloseSocketGracefullySender();
-			return exitUser;
-		}
-		else
-		{
-			break;
-		}
-	}
-	return SUCCESS;
-}
-
-
-
-//to-do change name 
-
-static DWORD RecvDataThread(void)
-{
-	//to -do free message
-	TransferResult_t RecvRes;
-	message* new_message;
-	char* AcceptedStr;
-	while (1)
-	{
-		AcceptedStr = NULL;
-		RecvRes = ReceiveString(&AcceptedStr, m_socket);
-		if (RecvRes == TRNS_FAILED)
-		{
-			printf("Socket error while trying to write data to socket\n");
-			goto clean1;
-		}
-		else if (RecvRes == TRNS_DISCONNECTED)
-		{
-			printf("Server disconected \n", SERVER_ADDRESS_STR, SERVER_PORT);
-			RecvRes = ConnectToServerWithUI(&m_socket, &clientService, sizeof(clientService));
-			if (RecvRes != SUCCESS)
-				goto clean2;
-			printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
-		}
-		else
-		{
-			printf("%s\n", AcceptedStr);
-			new_message = process_Message(AcceptedStr, 0);
-			if ((int)new_message == -1)
-			{
-				goto clean1;
-
-			}
-			exec_protocol(new_message, m_socket);
-			free(AcceptedStr);
-			AcceptedStr = NULL;
-
-		}
-	}
-	//clean 1 free the product of process_message
-clean1:
-	if (AcceptedStr != NULL)
-		free(AcceptedStr);
-	shutdown(m_socket, SD_BOTH);
-	closesocket(m_socket);
-	return RecvRes;
-clean2:
-	if (AcceptedStr != NULL)
-		free(AcceptedStr);
-	shutdown(m_socket, SD_SEND);
-	return RecvRes;
-}
-
-
-
-///
-// if (STRINGS_ARE_EQUAL(SendStr, "quit"))
-//return exit; //"quit" signals an exit from the client side
-
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
-
-//to-do change name 
-
-//Sending data to the server
-static DWORD SendDataThread(void)
-{
-	//to -do free message
-	char SendStr[MAX_LEN_MESSAGE] = { 0 };
-	char inputstr[MAX_LEN_MESSAGE] = { 0 };
-	int valid;
-	TransferResult_t send_result;
-	char* user_name = NULL;
-	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
-
-	//SendString("CLIENT_VERSUS", m_socket);  
-	printf("Insert username:\n");
-
-	while (1)
-	{
-		gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
-		
-		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
-		//my_state = WANTTODISCONNECT;
-		if (my_state == MENU) {
-			if (STRINGS_ARE_EQUAL(inputstr, "2")) {
-				my_state == WANTTODISCONNECT;
-			}
-			else if (STRINGS_ARE_EQUAL(inputstr, "1")) {
-				my_state = WANTTOPLAY;
-			}
-		}
-
-		if (my_state == GetName)
-		{
-			//	user_name = getUserName();
-				//I need to remember to free user_name
-			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", inputstr);
-			send_result = SendString(SendStr, m_socket);
-		}
-		else if (my_state == WANTTOPLAY) {
-			sprintf(SendStr, "%s", "CLIENT_VERSUS", inputstr);
-			send_result = SendString(SendStr, m_socket);
-		}
-		else if (my_state == GetSecret)
-		{
-			valid = isValid(&SendStr);
-			if (valid) {
-				sprintf(SendStr, "%s:%s", "CLIENT_SETUP", inputstr);
-				send_result = SendString(SendStr, m_socket);
-			}
-			continue;
-		}
-		else if (my_state == GetGuess)
-		{
-			valid = isValid(&SendStr);
-			if (valid) {
-				sprintf(SendStr, "%s:%s", "CLIENT_PLAYER_MOVE", inputstr);
-				send_result = SendString(SendStr, m_socket);
-			}
-			continue;
-		}
-		else if (my_state == WANTTODISCONNECT) {
-			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED", inputstr);
-			send_result = SendString(SendStr, m_socket);
-			shutdown(m_socket, SD_SEND);
-		}
-
-	}
-	return 1;
-}
-//message* user_mes = process_Message(SendStr, 0); //TO-DO DEFINE IS SERVER; 
-//if (state == menu) {
-	//print the menu
-	//get the user input 
-	//get_s() or new state for inputing 
-	//if input is 2
-	//SendString("CLIENT_VERSUS", m_socket);
-//}
-//else if (state == )
-//else if (state == data) {
-
-//}
-//else...
-
-//if (STRINGS_ARE_EQUAL(SendStr, "quit"))
-	//return exit; //"quit" signals an exit from the client side
-
-//SendRes = SendString(SendStr, m_socket);
-//if (SendRes == TRNS_FAILED)
-//{
-	//printf("Socket error while trying to write data to socket\n");
-	//return SendRes;
-//}
-//}
-//return 1;
-//}
-
-/*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
-
-
-
-
-
-
-
-//
-//
-////change the recieved message to the accepted format.*
-//char* ParseInputMessage(char* user_input, int mode)
-//{
-//
-//	char* temp = NULL;
-//	char* temp2;
-//	switch (mode) {
-//	case(NEW_USER_REQUEST):
-//		temp = (char*)malloc(sizeof(user_input) + sizeof(server_Messages[mode]) + 10 * sizeof(char));
-//		strcpy(temp, server_Messages[mode]);
-//		strcat(temp, ":");
-//		strcat(temp, user_input);
-//		break;
-//	case(PLAY_REQUEST):
-//		temp = (char*)malloc(sizeof(user_input) + sizeof(server_Messages[mode]) + 10 * sizeof(char));
-//		strcpy(temp, server_Messages[mode]);
-//		temp2 = strchr(user_input, ' ');
-//		temp2[0] = ':';
-//		strcat(temp, temp2);
-//		break;
-//	case(SEND_MESSAGE):
-//		temp = (char*)malloc(sizeof(user_input) + sizeof(server_Messages[mode]) + 100 * sizeof(char));
-//		strcpy(temp, server_Messages[mode]);
-//		temp2 = strchr(user_input, ' ');
-//		temp2[0] = ':';
-//		int counter = 0;
-//		while (temp2[counter] != '\0')// put ";_;" insted of '_'
-//		{
-//			if (temp2[counter] == ' ') {
-//				insert_substring(temp2, "; ;", counter + 1);
-//				counter += 2;
-//			}
-//			else
-//				counter++;
-//		}
-//		strcat(temp, temp2);
-//		break;
-//
-//	default:
-//		printf("Error, undefiened mode (cannot create message).\n");
-//		break;
-//	}
-//
-//	return temp;
-//}
-int exec_protocol(message* msg, SOCKET sender) {
-	int exit = 0;
-	int i = 0;
-	int length;
-	int portNumber = SERVER_PORT;
-	char ip = SERVER_ADDRESS_STR;
-	char* bulls, cows, name;
-	char* temp = NULL;
-	char* number = NULL;
-	char* sequence = NULL;
-	//char type = (char)(msg->ServerType);
-	switch (msg->ServerType) {
-	case SERVER_MAIN_MENU:
-		showMenu(MAIN, portNumber, ip);
-		my_state = MENU;
-		//my_state = WANTTOPLAY;
-		break;
-	case SERVER_APPROVED:
-		printf("welcome to the server\n");
-		//my_state = WANTTOPLAY;
-		break;
-	case SERVER_DENIED:
-		//disconnect
-		showMenu(FAILURE, portNumber, ip);
-		//my_state = MENU;
-		break;
-	case SERVER_INVITE:
-		printf("Game is on!\n");
-		break;
-	case SERVER_SETUP_REQUSET:
-		printf("Please choose a 4-digits number, with no duplicates\n");
-		my_state = GetSecret;
-		//number = chooseNumber();
-		//SendString(number, sender);
-		break;
-	case SERVER_PLAYER_MOVE_REQUEST:
-		printf("Please choose your guess!\n");
-		my_state = GetGuess;
-		//number = chooseNumber();
-		//SendString(number, sender);
-		break;
-	case SERVER_GAME_RESULTS:
-		printf("%s had %s bulls\n, %s cows\n, and he guess %s\n", msg->message_arguments[2], msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[3]);
-		break;
-	case SERVER_WIN:
-		printf("%s won!\n His sequence was %s\n", msg->message_arguments[0], msg->message_arguments[1]);
-		//my_state = WANTTOPLAY;
-		break;
-	case SERVER_DRAW:
-		printf("it's a tie!\n");
-		break;
-	case SERVER_NO_OPPONENTS:
-		printf("you got no other players to play with ,please try again later\n");
-		my_state = WANTTOPLAY;
-		break;
-	case SERVER_OPPONENT_QUIT:
-		printf("the other player disconnected.\n");
-		break;
-	default:
-		printf("Undifiend message type recieved\n");
-		break;
-	}
-}
-
-//int name_length(message* msg, int start_index) {
-//	int length;
-//	for (int i = start_index; msg->message_arguments[i] != ','; i++) {
-//		length++;
-//	}
-//	return length;
-//}
-//void get_sequence(message* msg, char* guess, int number_of_commas_to_count) {
-//	int flag = 1;
-//	int comma_counter = 0;
-//	int i, j, k;
-	//char guess[5] = NULL;
-//	for (i = 0; comma_counter != number_of_commas_to_count; i++) {
-//		if (msg->message_arguments[i] == ',')
-//			comma_counter += 1;
-//	}
-//	for (int j = i + 1; msg->message_arguments[j] != '\0'; j++, k++) {
-//		guess[k] = msg->message_arguments[j];
-//	}
-//	guess[k + 1] = '\0';
-//	return guess;
-//}
-	/////
-//////////////////////////
-/////////////////////////
-/////////////////////////
-/////////////////////////
-//////////////////////////
-
+//TO-DO send create mutex cheach if server disconnect.
+//TO-DO wait for 15 sec ! 
+//to do add event client aprooved

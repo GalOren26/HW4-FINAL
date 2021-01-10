@@ -123,7 +123,7 @@ int isValid(char* number) {
 //	return guess;
 //}
 bool isRightSize(char* guess) {
-	if (guess_size != strlen(guess)) {
+	if (guess_size!= strlen(guess)) {
 		printf("insert exactly 4 digits. please try again \n");
 		return false;
 	}

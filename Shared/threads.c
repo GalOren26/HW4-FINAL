@@ -44,22 +44,15 @@ int Init_Threads(int N, LPTHREAD_START_ROUTINE p_start_routine,
 	return 1;
 }
 
-int Close_Threads(int N, HANDLE p_thread_handles[]) {
-
-	int ret_val;
+int Close_Threads(int N, HANDLE * p_thread_handles) {
 	int i;
 
 	for (i = 0; i < N; i++)
 	{
-		ret_val = CloseHandle(p_thread_handles[i]);
-		if (FALSE == ret_val)
-		{
-			printf("Error when closing thread: %d\n", GetLastError());
-			return 0;
-		}
+		if (p_thread_handles[i]!=NULL)
+			CloseHandle(p_thread_handles[i]);
 	}
-
-	return 1;
+	return SUCCESS;
 }
 
 void KillThreads(HANDLE h_Threads[],int num_of_threads) {

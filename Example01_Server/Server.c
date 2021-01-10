@@ -1,5 +1,4 @@
 
-
 #include "Server.h"
 
 
@@ -19,7 +18,7 @@ HANDLE player2Event;
 
 //---threads declarations--- 
 
-static DWORD ServiceThread(int*me);
+static DWORD ServiceThread(int* me);
 static DWORD InputExitThread(SOCKET* t_socket);
 // threads function 
 int WaitForUser(HANDLE player_event);
@@ -38,7 +37,7 @@ void MainServer(int port)
 	//	CloseHandleWrap(fileHandle);
 	//	DeleteFileA(FILEPATH);
 	//}
-	
+
 	int Ind;
 	SOCKET MainSocket = INVALID_SOCKET;
 	SOCKADDR_IN service;
@@ -46,6 +45,11 @@ void MainServer(int port)
 	int ListenRes;
 	int ret_val = 0;
 	/// ------- create synch elements ------
+	/// 
+	if (PathFileExistsA(FILEPATH))
+	{
+		DeleteFileA(FILEPATH);
+	}
 	ret_val = InitSyncElements();
 	if (ret_val != SUCCESS)
 	{
@@ -55,7 +59,7 @@ void MainServer(int port)
 	MainSocket = createSocket();
 	if (MainSocket == INVALID_SOCKET)
 	{
-		printf("Error at socket( ): %ld\n", WSAGetLastError());
+		printf("Error at socket( ): %ld\n\n", WSAGetLastError());
 		goto server_cleanup_1;
 	}
 	//bind to socket 
@@ -67,7 +71,7 @@ void MainServer(int port)
 	ListenRes = listen(MainSocket, SOMAXCONN);
 	if (ListenRes == SOCKET_ERROR)
 	{
-		printf("Failed listening on socket, error %ld.\n", WSAGetLastError());
+		printf("Failed listening on socket, error %ld.\n\n", WSAGetLastError());
 		goto server_cleanup_2;
 	}
 	//---------create connection end ---
@@ -87,31 +91,31 @@ void MainServer(int port)
 	}
 
 	// Initialize all thread handles to NULL, to mark that they have not been initialized
-
+	Ind = 0;
 	while (true)
 	{
-
-		printf("Waiting for a client to connect...\n");
+		if (Ind < 1)
+			printf("Waiting for a client to connect...\n\n");
 
 		SOCKET AcceptSocket = accept(MainSocket, NULL, NULL);//TO-DO dISCCONENT this socket in exit.
 		if (AcceptSocket == INVALID_SOCKET)
 		{
-			printf("Accepting connection with client failed,server is closed .. , error %ld\n", WSAGetLastError());
+			printf("Accepting connection with client failed,server is closed .. , error %ld\n\n", WSAGetLastError());
 			goto server_cleanup_3;
 		}
-		printf("Client Connected.\n");
+		printf("Client Connected.\n\n");
 
 		Ind = FindFirstUnusedThreadSlot();
 
 		if (Ind == NUM_OF_WORKER_THREADS) //no slot is available
 		{
-			printf("No slots available for client, dropping the connection.\n");
+			printf("No slots available for client, dropping the connection.\n\n");
 			SendString("SERVER_DENIED:Server already has two players,try later:)", MainSocket);
 		}
 		else
 		{
 			Sockets[Ind] = AcceptSocket; // shallow copy: don't close   AcceptSocket, instead close    ThreadInputs[Ind] when the   time comes.
-			ThreadHandles[Ind] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ServiceThread, (LPWORD*)Ind, 0, NULL);
+			ThreadHandles[Ind] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ServiceThread, &Ind, 0, NULL);
 			if (ThreadHandles[Ind] == NULL)
 			{
 				printf("failed create thread %d", GetLastError());
@@ -126,11 +130,11 @@ server_cleanup_2:
 	if (MainSocket != 0)
 	{
 		if (closesocket(MainSocket) == SOCKET_ERROR)
-			printf("Failed to close MainSocket, error %ld. Ending program\n", WSAGetLastError());
+			printf("Failed to close MainSocket, error %ld. Ending program\n\n", WSAGetLastError());
 	}
 server_cleanup_1:
 	if (WSACleanup() == SOCKET_ERROR)
-		printf("Failed to close Winsocket, error %ld. Ending program.\n", WSAGetLastError());
+		printf("Failed to close Winsocket, error %ld. Ending program.\n\n", WSAGetLastError());
 server_cleanup_0:
 	CloseHandle(file_mutex);
 	CloseHandle(player1Event);
@@ -163,18 +167,18 @@ static DWORD ServiceThread(int* me)
 		if (RecvRes == TRNS_FAILED)
 		{
 			ret_val = RecvRes;
-			printf("error while reading, closing this thread .\n");
+			printf("error while reading, closing this thread .\n\n");
 			Done = true;
 		}
 		else if (RecvRes == TRNS_DISCONNECTED)
 		{
 			ret_val = RecvRes;
-			printf("Connection closed while reading, closing thread.\n");
+			printf("Connection closed while reading, closing thread.\n\n");
 			Done = true;
 		}
 		else
 		{
-			printf("Got string:%s\n", AcceptedStr);
+			printf("Got string:%s\n\n", AcceptedStr);
 			lp_message = process_Message(AcceptedStr, IsServer);
 			ret_val = ManageMessageReceived(lp_message, MyIndex, t_socket, &IOpenTheFile);//to do cheak return value and manage it 
 			if (ret_val != SUCCESS)
@@ -194,8 +198,12 @@ static DWORD ServiceThread(int* me)
 
 	}
 
-	printf("Conversation ended.\n");
-	printf("Waiting for a client to connect...\n");
+	printf("Conversation ended.\n\n");
+	printf("Waiting for a client to connect...\n\n");
+	if (PathFileExistsA(FILEPATH))
+	{
+		DeleteFileA(FILEPATH);
+	}
 	if (!ServerInitateShutDown)
 	{
 		int other = (MyIndex + 1) % 2;
@@ -215,7 +223,7 @@ static DWORD InputExitThread(SOCKET* t_socket)
 		gets_s(input_str, sizeof(input_str)); //Reading a string from the keyboard
 		if (STRINGS_ARE_EQUAL(input_str, "exit"))
 		{
-			printf("quit is received by the server admin, server quit!\n");
+			printf("quit is received by the server admin, server quit!\n\n");
 			ServerInitateShutDown = true;
 			closesocket(*t_socket);
 			*t_socket = 0;
@@ -302,6 +310,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 	int other = (myIndex + 1) % 2;
 	static char My_Secret[MAX_LEN_MESSAGE] = { 0 };
 	static char Other_Secret[MAX_LEN_MESSAGE] = { 0 };
+	char headers[MAX_LEN_MESSAGE] = { 0 };
 	static int round = 1;
 	if (lp_message->ClientType == CLIENT_REQUEST)
 	{
@@ -312,7 +321,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 		{
 			ret_val1 = TRNS_FAILED;
-			printf("error while sending, closing thread.\n");
+			printf("error while sending, closing thread.\n\n");
 			return ret_val1;
 		}
 		return SUCCESS;
@@ -356,6 +365,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		//case of time out of one of the users 
 		if (res != SUCCESS)
 		{
+			printf("im user %s", usernames[myIndex]);
 			CloseHandleWrap(fileHandle);
 			fileHandle = NULL;
 			DeleteFileA(FILEPATH);
@@ -364,7 +374,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 			if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 			{
 				ret_val1 = TRNS_FAILED;
-				printf("error while sending, closing thread.\n");
+				printf("error while sending, closing thread.\n\n");
 				return  ret_val1;
 			}
 			return SUCCESS;
@@ -374,14 +384,14 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf("error while sending, closing thread.\n");
+			printf("error while sending, closing thread.\n\n");
 			return  ret_val1;
 		}
 		sprintf(SendStr, "SERVER_SETUP_REQUSET");
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error while sending, closing thread.\n");
+			printf(" error while sending, closing thread.\n\n");
 			return  ret_val1;
 		}
 		return SUCCESS;
@@ -401,7 +411,8 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		}
 		if (myIndex == FirstThread)
 		{
-			ret_val1 = player1_read_write_file(My_Secret, Other_Secret, "----Secrets----");
+			sprintf(headers, "----Secrets----");
+			ret_val1 = player1_read_write_file(My_Secret, headers,Other_Secret );
 			if (ret_val1 != SUCCESS)
 				return ret_val1;
 		}
@@ -410,186 +421,200 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error while sending, closing thread.\n");
+			printf(" error while sending, closing thread.\n\n");
 			return  ret_val1;
 		}
 	}
 	else if (lp_message->ClientType == CLIENT_PLAYER_MOVE)
 	{
-		ret_val1=PlayRound(lp_message, &round, myIndex, My_Secret, Other_Secret, t_socket);
+		ret_val1 = PlayRound(lp_message, &round, myIndex, My_Secret, Other_Secret, t_socket);
 		if (ret_val1 != SUCCESS)
 			return ret_val1;
 	}
 	return SUCCESS;
 }
 
-	int WaitForUser(HANDLE player_event) {
-		int res = 0;
-		while (true)
+int WaitForUser(HANDLE player_event) {
+	int res = 0;
+	while (true)
+	{
+		res = WaitForSingleObject(player_event, TIME_OUT_THREAD / 2);
+		if (res == WAIT_OBJECT_0)
 		{
-			res = WaitForSingleObject(player_event, TIME_OUT_THREAD / 2);
-			if (res == WAIT_OBJECT_0)
-			{
-				return SUCCESS;
-			}
-			else if (ServerInitateShutDown == true)
-			{
-				return exitUser;
-			}
+			return SUCCESS;
+		}
+		else if (ServerInitateShutDown == true)
+		{
+			return exitUser;
 		}
 	}
-	int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line)
+}
+int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line)
+{
+	int ret_val1;
+
+	//lock mutex
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//write line from input array to file  
+	ret_val1 = WriteLineString(fileHandle, header_message);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+	ret_val1 = WriteLineString(fileHandle, input_line);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+	//realse mutex 
+	ret_val1 = ReleaseMutexeWrap(file_mutex);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//set even player 1- let player 2 get out of blocking 
+	SetEvent(player1Event);
+
+	//wait for player 2 
+	ret_val1 = WaitForSingleObjectWrap(player2Event, TIME_OUT_THREADS* 10);
+	if (ret_val1 != SUCCESS)
 	{
-		int ret_val1;
-
-		//lock mutex
-		ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREAD);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//write line from input array to file  
-		ret_val1 = WriteLineString(header_message, input_line);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-		ret_val1 = WriteLineString(fileHandle, input_line);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-		//realse mutex 
-		ret_val1 = ReleaseMutexeWrap(file_mutex);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//set even player 1- let player 2 get out of blocking 
-		SetEvent(player1Event);
-
-		//wait for player 2 
-		ret_val1 = WaitForSingleObjectWrap(player2Event, TIME_OUT_THREAD);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//lock file mutex
-		ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREAD);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//read line from file to output array 
-		ret_val1 = ReadLine(fileHandle, output_line);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//realse mutex 
-		ret_val1 = ReleaseMutexeWrap(file_mutex);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-		return SUCCESS;
-
+		printf("im here2");
+		return ret_val1;
 	}
-	int player2_read_write_file(char* input_line, char* OUT output_line)
+
+	//lock file mutex
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	if (ret_val1 != SUCCESS)
 	{
-		int ret_val1;
-
-
-		//wait for player 1
-		ret_val1 = WaitForSingleObjectWrap(player1Event, TIME_OUT_THREAD);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-		//lock mutex
-		ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREAD);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//read line from filr to output array 
-		ret_val1 = ReadLine(fileHandle, output_line);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//write line from input array to file  
-		ret_val1 = WriteLineString(fileHandle, input_line);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//realse mutex 
-		ret_val1 = ReleaseMutexeWrap(file_mutex);
-		if (ret_val1 != SUCCESS)
-			return ret_val1;
-
-		//set even player 1- let player 2 get out of blocking 
-		SetEvent(player2Event);
-		return SUCCESS;
+		printf("im here3");
+		return ret_val1;
 	}
-	int PlayRound(message * lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET * t_socket)
-	{
 
-		char Guess[MAX_LEN_MESSAGE] = { 0 };
-		char OtherGuess[MAX_LEN_MESSAGE] = { 0 };
-		char header[MAX_LEN_OF_PARAM] = { 0 };
-		char SendStr[MAX_LEN_MESSAGE] = { 0 };
-		int bulls = 0;
-		int cows = 0;
-		int statusPlayer1 = 0;
-		int statusPlayer2 = 0;
-		int other = (myIndex + 1) % 2;
-		int ret_val1 = 0;
-		sprintf(Guess, "%s", lp_message->message_arguments[0]);
-		sprintf(header, "----Round%d----", *round++);
-		if (myIndex == SecondThread)
-		{
-			ret_val1 = player2_read_write_file(Guess, OtherGuess);
-			if (ret_val1 != SUCCESS)
-				return ret_val1;
-		}
-		if (myIndex == FirstThread)
-		{
-			ret_val1 = player1_read_write_file(Guess, OtherGuess, header);
-			if (ret_val1 != SUCCESS)
-				return ret_val1;
-		}
-		//status of first player 
-		statusPlayer1 = PlayRoundPlayer(My_Secret, Guess, &bulls, &cows, true);
-		//status of second  player 
-		statusPlayer2 = PlayRoundPlayer(Other_Secret, Other_Secret, NULL, NULL, false);
-		//send game results 
-		sprintf(SendStr, "SERVER_GAME_RESULTS:%d;%d;%s;%s", bulls, cows, usernames[other], OtherGuess);
+	//read line from file to output array 
+	ret_val1 = ReadLine(fileHandle, output_line);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//realse mutex 
+	ret_val1 = ReleaseMutexeWrap(file_mutex);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+	return SUCCESS;
+
+}
+int player2_read_write_file(char* input_line, char* OUT output_line)
+{
+	int ret_val1;
+
+
+	//wait for player 1
+	ret_val1 = WaitForSingleObjectWrap(player1Event, TIME_OUT_THREADS*10);
+	if (ret_val1 != SUCCESS)
+	{
+		printf("im here4");
+		return ret_val1;
+	}
+	//lock mutex
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	
+	if (ret_val1 != SUCCESS)
+	{
+		printf("im here5");
+		return ret_val1;
+	}
+		
+
+	//read line from filr to output array 
+	ret_val1 = ReadLine(fileHandle, output_line);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//write line from input array to file  
+	ret_val1 = WriteLineString(fileHandle, input_line);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//realse mutex 
+	ret_val1 = ReleaseMutexeWrap(file_mutex);
+	if (ret_val1 != SUCCESS)
+		return ret_val1;
+
+	//set even player 1- let player 2 get out of blocking 
+	SetEvent(player2Event);
+	return SUCCESS;
+}
+int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket)
+{
+
+	char Guess[MAX_LEN_MESSAGE] = { 0 };
+	char OtherGuess[MAX_LEN_MESSAGE] = { 0 };
+	char header[MAX_LEN_OF_PARAM] = { 0 };
+	char SendStr[MAX_LEN_MESSAGE] = { 0 };
+	int bulls = 0;
+	int cows = 0;
+	int statusPlayer1 = 0;
+	int statusPlayer2 = 0;
+	int other = (myIndex + 1) % 2;
+	int ret_val1 = 0;
+	sprintf(Guess, "%s", lp_message->message_arguments[0]);
+	sprintf(header, "----Round%d----", *round++);
+	if (myIndex == SecondThread)
+	{
+		ret_val1 = player2_read_write_file(Guess, OtherGuess);
+		if (ret_val1 != SUCCESS)
+			return ret_val1;
+	}
+	if (myIndex == FirstThread)
+	{
+		ret_val1 = player1_read_write_file(Guess, OtherGuess, header);
+		if (ret_val1 != SUCCESS)
+			return ret_val1;
+	}
+	//status of first player 
+	statusPlayer1 = PlayRoundPlayer(My_Secret, Guess, &bulls, &cows, true);
+	//status of second  player 
+	statusPlayer2 = PlayRoundPlayer(Other_Secret, Other_Secret, NULL, NULL, false);
+	//send game results 
+	sprintf(SendStr, "SERVER_GAME_RESULTS:%d;%d;%s;%s", bulls, cows, usernames[other], OtherGuess);
+	ret_val1 = SendString(SendStr, *t_socket);
+	if (ret_val1 == TRNS_FAILED)
+		goto clean_game0;
+	//player1 win 
+	if (statusPlayer1 == true && statusPlayer2 == false)
+	{
+		sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[myIndex], OtherGuess);
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 			goto clean_game0;
-		//player1 win 
-		if (statusPlayer1 == true && statusPlayer2 == false)
-		{
-			sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[myIndex], OtherGuess);
-			ret_val1 = SendString(SendStr, *t_socket);
-			if (ret_val1 == TRNS_FAILED)
-				goto clean_game0;
-		}
-		//player2 win 
-		else if (statusPlayer1 == false && statusPlayer2 == true)
-		{
-			sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[other], OtherGuess);
-			ret_val1 = SendString(SendStr, *t_socket);
-			if (ret_val1 == TRNS_FAILED)
-				goto clean_game0;
-		}
-		//draw 
-		else if (statusPlayer1 == true && statusPlayer2 == true) {
-			sprintf(SendStr, "SERVER_DRAW");
-			SendString(SendStr, *t_socket);
-			if (ret_val1 == TRNS_FAILED)
-				goto clean_game0;
-		}
-
-		return SUCCESS;
-
-	clean_game0:
-		printf(" error while sending, closing thread.\n");
-		return  ret_val1;
+	}
+	//player2 win 
+	else if (statusPlayer1 == false && statusPlayer2 == true)
+	{
+		sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[other], OtherGuess);
+		ret_val1 = SendString(SendStr, *t_socket);
+		if (ret_val1 == TRNS_FAILED)
+			goto clean_game0;
+	}
+	//draw 
+	else if (statusPlayer1 == true && statusPlayer2 == true) {
+		sprintf(SendStr, "SERVER_DRAW");
+		SendString(SendStr, *t_socket);
+		if (ret_val1 == TRNS_FAILED)
+			goto clean_game0;
 	}
 
+	return SUCCESS;
+
+clean_game0:
+	printf(" error while sending, closing thread.\n\n");
+	return  ret_val1;
+}
 
 
 
-	/*HANDLE new_players_mutex;
-	HANDLE fileHandle = NULL;
-	HANDLE player1Event;
-	HANDLE player2Event;
 
-	*/
+/*HANDLE new_players_mutex;
+HANDLE fileHandle = NULL;
+HANDLE player1Event;
+HANDLE player2Event;
+
+*/

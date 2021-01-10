@@ -26,19 +26,19 @@ if it does not manage to read it exits with the last error*/
 int  ReadFileWrap(DWORD len, HANDLE file, char* my_file_buff, DWORD* NumberOfBytesRead);
 
 
-
+int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToMove, DWORD* OUT PositionAfterSet);
 /*A wrap for the setfilepointer function. the function gets as an input the handle of the file,
 and it moves the file pointer by "pos" bytes acording to the mode given as an input */
 // the function can return the current file poistion in out paramter PositionAfterSet .
 //if not needed PositionAfterSet set it to None 
-int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToMove, DWORD* OUT PositionAfterSet);
+int SetEndOfFileWarp(HANDLE  input_file, uli offset_len, int mode);
 
 /*A wrap if the writefile function, it gets as an input handle of a file,buffer, and the amount of bytes to write
 if does not manage to write, it exits with the last error*/
 int WriteFileWrap(HANDLE hFile, LPCVOID  lpBuffer, DWORD  nNumberOfBytesToWrite);
 
 //write single line to file this function add \n at end;
-int WriteLineString(HANDLE input_file, char* line );
+int WriteLineString(HANDLE input_file, char line []);
 // read line for file and return it in line array 
 int ReadLine(HANDLE input_file, char* line);
 
@@ -67,7 +67,7 @@ the function closes the handles in the array, if not it exit with LastError.
 */
 int FreeHandelsArray(HANDLE* handels, int len);
 
-
+void my_strcpy(char* destination, const char* source);
 
 //memory mengment 
 //int setup_memory_menagment(memorytracker* out memtracker);

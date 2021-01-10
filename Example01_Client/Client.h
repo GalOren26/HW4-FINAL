@@ -16,7 +16,6 @@
 #include "messages.h"
 #include "Socket.h"
 #include "threads.h"
-
 typedef enum
 {
     GetName,
@@ -24,16 +23,16 @@ typedef enum
     GetSecret,
     GetGuess,
     WANTTODISCONNECT,
-    MENU
+    MENU,
 }state;
 
 #define NumOfClientThreads 2
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 int MainClient(int argc, char* argv[] );
-int ConnectToServerWithUI(SOCKET *my_socket, SOCKADDR* my_clientService, int SizeOfclientService);
+int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService, int portNumber, char* ip);
 //void CleanupWorkersThreadsSocketsClient();
-int exec_protocol(message* msg, SOCKET sender);
+void exec_protocol(message* msg, SOCKET sender);
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
 #endif // SOCKET_EXA MPLE_CLIENT_H

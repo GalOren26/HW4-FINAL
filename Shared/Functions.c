@@ -89,6 +89,25 @@ int CheakIsAnumber(char* str)
 }
 //****************File methods**************
 
+
+int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToMove, DWORD* OUT PositionAfterSet)
+{
+	DWORD retval;
+	if (PositionAfterSet != NULL)
+	{
+		retval = SetFilePointer(input_file, DistanceToMove, NULL, FromWhereToMove);
+		*PositionAfterSet = retval;
+	}
+	else
+		retval = SetFilePointer(input_file, DistanceToMove, NULL, FromWhereToMove);
+	if (retval == INVALID_SET_FILE_POINTER)
+	{
+		printf("INVALID_SET_FILE_POINTER");
+		return INVALID_SET_FILE_POINTER;
+	}
+	return SUCCESS;
+}
+
 int ReadLine(HANDLE input_file, char* line)
 {
 
@@ -179,49 +198,43 @@ int WriteFileWrap(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite)
 	return SUCCESS;
 }
 //write string to file add that string a /n in the end ;
-int WriteLineString(HANDLE input_file, char* line)
+int WriteLineString(HANDLE input_file, char line[])
 {
+	int ret_val1 = 0;
 	int len = strlen(line);
-	char* temp_string = NULL;
+	char temp_line[MAX_LEN_MESSAGE + 1] = { 0 };
+	my_strcpy(temp_line, line);
+	temp_line[len] = '\n';
 	//set eof 
-	int ret_val1= SetEofAccordingToText(input_file, line);
+	ret_val1 = SetEofAccordingToText(input_file, temp_line);
 	if (ret_val1 != SUCCESS)
 	{
 		return ret_val1;
 	}
-	//alocate array in odredr to add \n in the end 
-	temp_string = (char*)calloc(len, sizeof(char)); 
-	ret_val1=CheckAlocation(temp_string);
-	if (ret_val1 != SUCCESS)
-	{
-		return ret_val1; 
-	}
-
-	sprintf_s(temp_string,sizeof(temp_string), "%s\n", line);
-	ret_val1=WriteFileWrap(input_file, line, len);
+	ret_val1=WriteFileWrap(input_file, temp_line, len+1);
 	if (ret_val1 != SUCCESS)
 	{
 		return ret_val1;
 	}
-	free(temp_string);
 	return SUCCESS;
-	
 }
 
-int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToMove, DWORD* OUT PositionAfterSet)
+int SetEndOfFileWarp(HANDLE  input_file, uli offset_len, int mode)
 {
-	DWORD retval;
-	if (PositionAfterSet != NULL)
+	int ret_val = 0;
+	uli position_in_file = 0;
+	// set EOF at the end of the input file 
+	ret_val = SetFilePointer(input_file, offset_len, &position_in_file, mode);
+	if (ret_val == INVALID_SET_FILE_POINTER)
 	{
-		retval = SetFilePointer(input_file, DistanceToMove, NULL, FromWhereToMove);
-		*PositionAfterSet = retval;
+		printf("problem with set file-pointer %d \n", GetLastError());
+		return ret_val;
 	}
-	else
-		retval = SetFilePointer(input_file, DistanceToMove, NULL, FromWhereToMove);
-	if (retval == INVALID_SET_FILE_POINTER)
+	ret_val = SetEndOfFile(input_file);
+	if (ret_val == 0)
 	{
-		printf("INVALID_SET_FILE_POINTER\n");
-		return INVALID_SET_FILE_POINTER;
+		printf("error with set eof ,error code %d", GetLastError());
+		return ret_val;
 	}
 	return SUCCESS;
 }
@@ -232,12 +245,12 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 	uli current_poistion;
 	//set file pointer on the current eof 
 	int len = strlen(string);
-	ret_val1 = SetFilePointerWrap(input_file, 0, FILE_END, &current_poistion);
+	ret_val1 = SetFilePointerWrap(input_file, 1, FILE_END, &current_poistion);
 	if (ret_val1 != SUCCESS)
 		return ret_val1;
 	//set end of file to the end of file +number of charcters that current therad need to write ,count by len
 
-	ret_val1 = SetEndOfFile(input_file);
+	ret_val1 = SetEndOfFileWarp(input_file,len, FILE_END);
 	if (ret_val1 == 0)
 	{
 		printf("error with set eof ,error code %d\n", GetLastError());
@@ -250,3 +263,20 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 
 	return SUCCESS;
 }
+
+
+void my_strcpy(char* destination,  char* source)
+{
+	while (*source != '\0')
+	{
+		*destination++ = *source++;
+	}
+}
+
+
+
+
+
+//input: input_file- the file we want to move it's pointer, offst_len-distance to move
+//output:number-indicates whether the function succeeded or not
+//fuctionality : this function wraps the windows API SetEndOfFile function 

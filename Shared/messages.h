@@ -29,9 +29,6 @@ typedef  enum {
 	SERVER_DRAW,
 	SERVER_NO_OPPONENTS,
 	SERVER_OPPONENT_QUIT,
-	MAIN,
-	FAILURE,
-	DENIED,
 	end
 }ServerMesType;
 typedef  enum {
@@ -42,6 +39,12 @@ typedef  enum {
 	CLIENT_DISCONNECT,
 	end1
 }ClientMesType;
+
+typedef  enum {
+	MAIN,
+	FAILURE,
+	DENIED
+}menu_states;
 
 typedef struct  {
 
@@ -65,11 +68,7 @@ void delete_message(message* lp_msg);
 message* process_Message(const char* message_text, int is_server);
 
 int get_message_code(const char* message_type, int is_server);
-//
-//int send_message_server(message* lp_message, SOCKET s_target);
 
-
-void MessageToString(message* lp_message, int is_server, char*  string);
 
 
 #endif
