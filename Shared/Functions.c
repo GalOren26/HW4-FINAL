@@ -133,7 +133,7 @@ int ReadLine(HANDLE input_file, char* line)
 		}
 
 		line[curser_index] = '\0';
-		memset(&line[curser_index], 0, MAX_LEN_MESSAGE - (curser_index - 1));
+		//memset(&line[curser_index], 0, MAX_LEN_MESSAGE - (curser_index - 1));
 		return SUCCESS;
 	}
 	return NOT_VALID_INPUT;
