@@ -299,19 +299,16 @@ void exec_protocol(message* msg, SOCKET sender) {
 		printf("you get:\nbulls:%s\ncows:%s\n\n%s played %s.\n\n", msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[2], msg->message_arguments[3]);
 		break;
 	case SERVER_WIN:
-		printf("%s won!\n opponents number was %s\n\n", msg->message_arguments[0], msg->message_arguments[1]);
-		my_state = MENU;
+		printf("%s won!\nopponents number was %s\n\n", msg->message_arguments[0], msg->message_arguments[1]);
 		break;
 	case SERVER_DRAW:
 		printf("it's a tie:/ \n");
 		break;
 	case SERVER_NO_OPPONENTS:
 		printf("you got no other players to play with ,please try again later\n\n");
-		my_state = MENU;
 		break;
 	case SERVER_OPPONENT_QUIT:
 		printf("the other player disconnected.\n\n");
-		my_state = MENU;
 		break;
 	default:
 		printf("Undifiend message type recieved\n");

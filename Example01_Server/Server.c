@@ -169,7 +169,7 @@ static DWORD ServiceThread(int* me)
 		if (RecvRes == TRNS_FAILED)
 		{
 			ret_val = RecvRes;
-			printf("error while reading, closing this thread .\n\n");
+			printf("error on read .\n\n");
 			Done = true;
 		}
 		else if (RecvRes == TRNS_DISCONNECTED)
@@ -209,7 +209,7 @@ static DWORD ServiceThread(int* me)
 	if (!ServerInitateShutDown)
 	{
 		int other = (MyIndex + 1) % 2;
-		SendString("SERVER_QUIT_OPPONENT", Sockets[other]);
+		SendString("SERVER_OPPONENT_QUIT", Sockets[other]);
 		SendString("SERVER_MAIN_MENU", Sockets[other]);
 		shutdown(Sockets[MyIndex], SD_SEND);
 	}
@@ -312,6 +312,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 	int other = (myIndex + 1) % 2;
 	char headers[MAX_LEN_MESSAGE] = { 0 };
 	static int round = 1;
+	static bool round_updated = false; 
 	if (lp_message->ClientType == CLIENT_REQUEST)
 	{
 
@@ -321,7 +322,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 		{
 			ret_val1 = TRNS_FAILED;
-			printf("error while sending, closing thread.\n\n");
+			printf("error on send.\n\n");
 			return ret_val1;
 		}
 		return SUCCESS;
@@ -333,7 +334,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		if (ret_val1 != SUCCESS)
 			return ret_val1;
 		//open file
-		if (!PathFileExistsA(FILEPATH))
+		if (!PathFileExistsA(FILEPATH)|| GetFileSize(fileHandle, NULL)>0)// no file or file from previous game so this is the first player 
 		{
 			ret_val1 = OpenFileWrap(FILEPATH, CREATE_ALWAYS, &fileHandle);
 			if (ret_val1 != SUCCESS)
@@ -374,7 +375,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 			if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 			{
 				ret_val1 = TRNS_FAILED;
-				printf("error while sending, closing thread.\n\n");
+				printf("error on send.\n\n");
 				return  ret_val1;
 			}
 			return SUCCESS;
@@ -384,14 +385,14 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf("error while sending, closing thread.\n\n");
+			printf("error on send.\n\n");
 			return  ret_val1;
 		}
 		sprintf(SendStr,"SERVER_SETUP_REQUSET"); 
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error while sending, closing thread.\n\n");
+			printf(" error on send.\n\n");
 			return  ret_val1;
 		}
 		return SUCCESS;
@@ -421,7 +422,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error while sending, closing thread.\n\n");
+			printf(" error on send.\n\n");
 			return  ret_val1;
 		}
 	}
@@ -430,7 +431,14 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = PlayRound(lp_message, &round, myIndex, My_Secret, Other_Secret, t_socket);
 		if (ret_val1 != SUCCESS)
 			return ret_val1;
+		if (round_updated)
+		{
+			round++;
+		}
+		round_updated = !round_updated;
 	}
+	
+
 	return SUCCESS;
 }
 
@@ -538,7 +546,7 @@ int player2_read_write_file(char* input_line, char* OUT output_line)
 	SetEvent(player2Event);
 	return SUCCESS;
 }
-int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket)
+int PlayRound(message* lp_message, int *round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket)
 {
 
 	char Guess[MAX_LEN_MESSAGE] = { 0 };
@@ -547,6 +555,7 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	char SendStr[MAX_LEN_MESSAGE] = { 0 };
 	int bulls = 0;
 	int cows = 0;
+	bool finish = false;
 	int statusPlayer1 = 0;
 	int statusPlayer2 = 0;
 	int other = (myIndex + 1) % 2;
@@ -563,15 +572,15 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	}
 	if (myIndex == FirstThread)
 	{
-		sprintf(header, "----Round%d----", *round++);
+		sprintf(header, "----Round%d----", *round);
 		ret_val1 = player1_read_write_file(Guess, header,OtherGuess );
 		if (ret_val1 != SUCCESS)
 			return ret_val1;
 	}
 	//status of first player 
-	statusPlayer1 = PlayRoundPlayer(My_Secret, Guess, &bulls, &cows, true);
+	statusPlayer1 = PlayRoundPlayer(Other_Secret, Guess, &bulls, &cows, true);
 	//status of second  player 
-	statusPlayer2 = PlayRoundPlayer(Other_Secret, OtherGuess, NULL, NULL, false);
+	statusPlayer2 = PlayRoundPlayer(My_Secret, OtherGuess, NULL, NULL, false);
 	//send game results 
 	sprintf(SendStr, "SERVER_GAME_RESULTS:%d;%d;%s;%s", bulls, cows, usernames[other], OtherGuess);
 	ret_val1 = SendString(SendStr, *t_socket);
@@ -580,6 +589,7 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	//player1 win 
 	if (statusPlayer1 == true && statusPlayer2 == false)
 	{
+		finish = true;
 		sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[myIndex], OtherGuess);
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
@@ -588,6 +598,7 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	//player2 win 
 	else if (statusPlayer1 == false && statusPlayer2 == true)
 	{
+		finish = true;
 		sprintf(SendStr, "SERVER_WIN:%s;%s", usernames[other], OtherGuess);
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
@@ -595,16 +606,29 @@ int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, cha
 	}
 	//draw 
 	else if (statusPlayer1 == true && statusPlayer2 == true) {
+		finish = true;
 		sprintf(SendStr, "SERVER_DRAW");
-		SendString(SendStr, *t_socket);
+		ret_val1=SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 			goto clean_game0;
 	}
-
+	//continue play :)
+	else {
+		sprintf(SendStr, "SERVER_PLAYER_MOVE_REQUEST");
+		ret_val1 = SendString(SendStr, *t_socket);
+		if (ret_val1 == TRNS_FAILED)
+			goto clean_game0;
+	}
+	if (finish)
+	{
+		sprintf(SendStr, "SERVER_MAIN_MENU");
+		ret_val1 = SendString(SendStr, *t_socket);
+		if (ret_val1 == TRNS_FAILED)
+			goto clean_game0;
+	}
 	return SUCCESS;
-
 clean_game0:
-	printf(" error while sending, closing thread.\n\n");
+	printf(" error on send.\n\n");
 	return  ret_val1;
 }
 
