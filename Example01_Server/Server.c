@@ -8,6 +8,7 @@ HANDLE ThreadHandles[NUM_OF_WORKER_THREADS] = { 0 };
 HANDLE ExitThreadHandle;
 SOCKET Sockets[NUM_OF_WORKER_THREADS] = { 0 };
 bool ServerInitateShutDown = false;
+bool game_is_start = false;
 char usernames[NUM_OF_WORKER_THREADS][MAX_LEN_NAME_PLAYER];
 
 //---synch elements---
@@ -98,17 +99,28 @@ void MainServer(int port)
 			printf("Accepting connection with client failed,server is closed .. , error %ld\n\n", WSAGetLastError());
 			goto server_cleanup_3;
 		}
-		printf("Client Connected.\n\n");
+
 
 		Ind = FindFirstUnusedThreadSlot();
 
 		if (Ind == NUM_OF_WORKER_THREADS) //no slot is available
 		{
 			printf("No slots available for client, dropping the connection.\n\n");
-			SendString("SERVER_DENIED:Server already has two players,try later:)", MainSocket);
+			char* AcceptedStr = NULL;
+			ReceiveString(&AcceptedStr, AcceptSocket);//get client versus
+			if (AcceptedStr)
+				free(AcceptedStr);
+			AcceptedStr = NULL;
+			SendString("SERVER_DENIED:Server already has two players,try later:)", AcceptSocket);
+			shutdown(AcceptSocket, SD_SEND);
+			ReceiveString(&AcceptedStr, AcceptSocket);
+			if (AcceptedStr)
+				free(AcceptedStr);
+			closesocket(AcceptSocket);
 		}
 		else
 		{
+			printf("Client Connected.\n\n");
 			Sockets[Ind] = AcceptSocket; // shallow copy: don't close   AcceptSocket, instead close    ThreadInputs[Ind] when the   time comes.
 			ThreadHandles[Ind] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ServiceThread, &Ind, 0, NULL);
 			if (ThreadHandles[Ind] == NULL)
@@ -203,13 +215,13 @@ static DWORD ServiceThread(int* me)
 	{
 		DeleteFileA(FILEPATH);
 	}
-	if (!ServerInitateShutDown)
+	if (!ServerInitateShutDown&& game_is_start)
 	{
-		int other = (MyIndex + 1) % 2;
+		int other = (MyIndex + 1) % 2;	
 		SendString("SERVER_OPPONENT_QUIT", Sockets[other]);
 		SendString("SERVER_MAIN_MENU", Sockets[other]);
-		shutdown(Sockets[MyIndex], SD_SEND);
 	}
+	shutdown(Sockets[MyIndex], SD_SEND);
 	closesocket(Sockets[MyIndex]);
 	return ret_val;
 }
@@ -320,20 +332,23 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 	static bool round_updated = false; 
 	if (lp_message->ClientType == CLIENT_REQUEST)
 	{
-
+		game_is_start = false;
 		strcpy(usernames[myIndex], (const char*)lp_message->message_arguments[0]);
+		printf("Client Accepted.\n\n");
 		ret_val1 = SendString("SERVER_APPROVED", *t_socket);
 		ret_val2 = SendString("SERVER_MAIN_MENU", *t_socket);
 		if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 		{
 			ret_val1 = TRNS_FAILED;
-			printf("error on send.\n\n");
+			printf("error on send to client.\n\n");
 			return ret_val1;
 		}
 		return SUCCESS;
 	}
 	else if (lp_message->ClientType == CLIENT_VERSUS)
 	{
+		game_is_start = false;
+		*IOpenTheFile = false;
 		//first player create the file 
 		ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS);
 		if (ret_val1 != SUCCESS)
@@ -371,7 +386,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		//case of time out of one of the users 
 		if (res != SUCCESS)
 		{
-			printf("im user %s", usernames[myIndex]);
+			printf("Time out waiting user %s\n", usernames[myIndex]);
 			CloseHandleWrap(fileHandle);
 			fileHandle = NULL;
 			DeleteFileA(FILEPATH);
@@ -380,24 +395,25 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 			if (ret_val1 == TRNS_FAILED || ret_val2 == TRNS_FAILED)
 			{
 				ret_val1 = TRNS_FAILED;
-				printf("error on send.\n\n");
+				printf("error on send to client.\n\n");
 				return  ret_val1;
 			}
 			return SUCCESS;
 		}
 		//2 players in the game
 		sprintf(SendStr, "SERVER_INVITE:%s", usernames[myIndex]);
+		game_is_start = true;
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf("error on send.\n\n");
+			printf("error on send to client.\n\n");
 			return  ret_val1;
 		}
 		sprintf(SendStr,"SERVER_SETUP_REQUSET"); 
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error on send.\n\n");
+			printf(" error on send to client.\n\n");
 			return  ret_val1;
 		}
 		return SUCCESS;
@@ -427,7 +443,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		ret_val1 = SendString(SendStr, *t_socket);
 		if (ret_val1 == TRNS_FAILED)
 		{
-			printf(" error on send.\n\n");
+			printf(" error on send to client.\n\n");
 			return  ret_val1;
 		}
 	}
@@ -470,7 +486,7 @@ int player1_read_write_file(char* input_line, char* header_message, char* OUT ou
 	int ret_val1;
 
 	//lock mutex
-	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS);
 	if (ret_val1 != SUCCESS)
 		return ret_val1;
 
@@ -490,14 +506,14 @@ int player1_read_write_file(char* input_line, char* header_message, char* OUT ou
 	SetEvent(player1Event);
 
 	//wait for player 2 
-	ret_val1 = WaitForSingleObjectWrap(player2Event, TIME_OUT_THREADS* 10);
+	ret_val1 = WaitForSingleObjectWrap(player2Event, INFINITE);
 	if (ret_val1 != SUCCESS)
 	{
 		return ret_val1;
 	}
 
 	//lock file mutex
-	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS);
 	if (ret_val1 != SUCCESS)
 	{
 		return ret_val1;
@@ -524,13 +540,13 @@ int player2_read_write_file(char* input_line, char* OUT output_line)
 
 
 	//wait for player 1
-	ret_val1 = WaitForSingleObjectWrap(player1Event, TIME_OUT_THREADS*10);
+	ret_val1 = WaitForSingleObjectWrap(player1Event, INFINITE);
 	if (ret_val1 != SUCCESS)
 	{
 		return ret_val1;
 	}
 	//lock mutex
-	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS* 10);
+	ret_val1 = WaitForSingleObjectWrap(file_mutex, TIME_OUT_THREADS);
 	
 	if (ret_val1 != SUCCESS)
 	{
@@ -644,6 +660,6 @@ int PlayRound(message* lp_message, int *round, int myIndex, char* My_Secret, cha
 	}
 	return SUCCESS;
 clean_game0:
-	printf(" error on send.\n\n");
+	printf(" error on send to client.\n\n");
 	return  ret_val1;
 }
