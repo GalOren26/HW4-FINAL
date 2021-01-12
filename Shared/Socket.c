@@ -37,7 +37,7 @@ TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
 	int TotalStringSizeInBytes;
 	TransferResult_t RecvRes;
 	char* StrBuffer = NULL;
-
+	
 	if ((OutputStrPtr == NULL) || (*OutputStrPtr != NULL))
 	{
 		printf("The first input to ReceiveString() must be "
@@ -83,6 +83,7 @@ TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd
 	char* CurPlacePtr = OutputBuffer;
 	int BytesJustTransferred;
 	int RemainingBytesToReceive = BytesToReceive;
+	
 
 	while (RemainingBytesToReceive > 0)
 	{
@@ -151,25 +152,6 @@ int Init_WinSocket(WSADATA* lp_wsa_data) {
 	return SUCCESS;
 }
 
-//int SocketGetLastError() {
-//	return WSAGetLastError();
-//}
-//void CloseSocketGracefullySender(SOCKET AcceptSocket)
-//{
-//	shutdown(AcceptSocket, SD_SEND);
-//	TransferResult_t RecvRes;
-//	char* AcceptedStr = NULL;
-//	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
-//	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
-//}
-//void CloseSocketGracefullyReciver(SOCKET AcceptSocket)
-//{
-//	char* AcceptedStr = NULL;
-//	TransferResult_t RecvRes;
-//	RecvRes = ReceiveString(&AcceptedStr, AcceptSocket);
-//	shutdown(AcceptSocket, SD_SEND);	
-//	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
-//}
 int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service)
 {
 

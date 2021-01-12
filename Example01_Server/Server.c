@@ -32,11 +32,6 @@ int player2_read_write_file(char* input_line, char* OUT output_line);
 
 void MainServer(int port)
 {
-	//int res = OpenFileWrap(FILEPATH, OPEN_EXISTING, &fileHandle);	//TODO -- is file
-	//if (res == SUCCESS) {
-	//	CloseHandleWrap(fileHandle);
-	//	DeleteFileA(FILEPATH);
-	//}
 
 	int Ind;
 	SOCKET MainSocket = INVALID_SOCKET;
@@ -142,6 +137,8 @@ server_cleanup_0:
 }
 
 //Service thread is the thread that opens for each successful client connection and "talks" to the client.
+//inputs arguments : int* me -in order to know if it's the first or second thread
+//output arguments: ret_val- the return value of ReceiveString function
 
 static DWORD ServiceThread(int* me)
 {
@@ -216,7 +213,9 @@ static DWORD ServiceThread(int* me)
 	closesocket(Sockets[MyIndex]);
 	return ret_val;
 }
-
+//ipnut agruments : t_socket - a socket
+//output arguments :Dword returns that the function succeeded
+//functionality :this function handle the user's desicision to exit the game
 static DWORD InputExitThread(SOCKET* t_socket)
 {
 	char input_str[MAX_LEN_MESSAGE];
@@ -236,7 +235,9 @@ static DWORD InputExitThread(SOCKET* t_socket)
 }
 
 /*oOoOo------FunctionsServer------oOoOoOoOoOoOoOoOoO*/
-
+///input arguments:none
+//output arguments : int indicats the first un used slot in the threadhanles array
+//functionality: this function finds the first unused slot in the threadhanles array
 int FindFirstUnusedThreadSlot()
 {
 	int Ind;
@@ -275,7 +276,9 @@ void CleanupWorkersThreads()
 	}
 	TerminateThreadGracefully(&ExitThreadHandle);
 }
-
+//ipnut arguments :none
+//output arguments- ret val indicates if all the sync elements created successfully 
+//functionality : this function creates all the sync elements : events  for rEvents and mutex for file mutex
 int InitSyncElements()
 {
 	int ret_val = 0;
@@ -303,7 +306,9 @@ clean0:
 }
 
 
-
+//input arguments : lp messaage - a message type argument, myIndex-index for the usernames array, t_socket- a socket, IOpenFile-true if the filewas open successfully
+//my_secret- chars array for the player secret number, other_secret- the opponent's secret number
+//functionality : this function handls messages that recived to the server
 int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile,char  My_Secret [], char Other_Secret[])
 {
 	char SendStr[MAX_LEN_MESSAGE];
@@ -437,11 +442,11 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 		}
 		round_updated = !round_updated;
 	}
-	
-
 	return SUCCESS;
 }
-
+//input: player_event- a handle
+//outputs : int indicats if the function succeeded or not
+//functionality : this function manages waiting for a user
 int WaitForUser(HANDLE player_event) {
 	int res = 0;
 	while (true)
@@ -457,6 +462,9 @@ int WaitForUser(HANDLE player_event) {
 		}
 	}
 }
+//input arguments: input_line- the input chars , header -header of the message, output_line- the line will be written by the function to this buffer
+//output arguments: int indicates if the function succeeded or not
+//functionality : this function handles the reading and writing to the file of player 1
 int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line)
 {
 	int ret_val1;
@@ -507,6 +515,9 @@ int player1_read_write_file(char* input_line, char* header_message, char* OUT ou
 	return SUCCESS;
 
 }
+//input arguments: input_line- the input chars, output_line- the line will be written by the function to this buffer
+//output arguments: int indicates if the function succeeded or not
+//functionality : this function handles the reading and writing to the file of player 2
 int player2_read_write_file(char* input_line, char* OUT output_line)
 {
 	int ret_val1;
@@ -546,6 +557,11 @@ int player2_read_write_file(char* input_line, char* OUT output_line)
 	SetEvent(player2Event);
 	return SUCCESS;
 }
+
+//input arguments: lp_message- message struct, round's number, My_secret- the player's secret numb er, other_secret- the opponent's secret number, t_socket- the socket
+//index - indicats if it's player 1 or 2
+//output arguments: int indicates if the function succeeded 
+//functionallity : this function executes a round
 int PlayRound(message* lp_message, int *round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket)
 {
 
@@ -631,13 +647,3 @@ clean_game0:
 	printf(" error on send.\n\n");
 	return  ret_val1;
 }
-
-
-
-
-/*HANDLE new_players_mutex;
-HANDLE fileHandle = NULL;
-HANDLE player1Event;
-HANDLE player2Event;
-
-*/

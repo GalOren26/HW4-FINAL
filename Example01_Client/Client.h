@@ -9,6 +9,7 @@
 
 #ifndef CLIENT_H
 #define CLIENT_H
+#define infinite_time 999999999
 #include "../Shared/HardCodedData.h"
 #include <stdlib.h>
 #include <stdio.h>

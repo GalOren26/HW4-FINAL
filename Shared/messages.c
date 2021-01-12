@@ -64,6 +64,8 @@ void delete_message(message* lp_msg) {
 
 
 /*	Utility functions that support other function for general things	*/
+
+//input arguments :message type - indicates which message we handle, is_server- indicates if this is a server or a client
 int get_message_code(const char* message_type, int is_server) {
 	int i, len;
 	const char** lut;
@@ -86,7 +88,9 @@ int get_message_code(const char* message_type, int is_server) {
 }
 
 
-
+//input: message_text - the message as a text , is_server- indicates if this is a erver or a client
+//ouputs : process_message- returns a "message struct"
+//functionality : this function creates the formated message
 message* process_Message(const char* message_text, int is_server) {
 	char tmp_message[MAX_LEN_MESSAGE];
 	strcpy(tmp_message, message_text);

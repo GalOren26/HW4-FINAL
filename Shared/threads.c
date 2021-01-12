@@ -43,7 +43,9 @@ int Init_Threads(int N, LPTHREAD_START_ROUTINE p_start_routine,
 
 	return 1;
 }
-
+//inputs : N- number of threads, p_thread_handles - array of handles
+//outputs :int indicates of the function succeeded or not
+//functionality : this function closes the handles to threads
 int Close_Threads(int N, HANDLE * p_thread_handles) {
 	int i;
 
@@ -62,7 +64,9 @@ void KillThreads(HANDLE h_Threads[],int num_of_threads) {
 	}
 
 }
-
+//input arguments: handle to event
+//output rguments : int indicates if the function succeeded 
+//functionality: this function creates an event
 int  create_event_simple(HANDLE * event )// create event
 {
 	HANDLE event_handle;
@@ -89,7 +93,9 @@ int  create_event_simple(HANDLE * event )// create event
 }
 
 
-
+//input arguments: handle to wait for , time_us -miliseconds to wait
+//output arguments: int indicates if the function succeeded or not
+//functionality:  this function wraps the WaitForSingleObject windows API function
 int WaitForSingleObjectWrap(HANDLE handle, uli time_ms)
 {
 	int wait_code = WaitForSingleObject(handle, time_ms);
@@ -100,7 +106,9 @@ int WaitForSingleObjectWrap(HANDLE handle, uli time_ms)
 	}
 	return SUCCESS;
 }
-
+//input arguments: handle to wait for , time_us -miliseconds to wait
+//output arguments: int indicates if the function succeeded or not
+//functionality:  this function wraps the WaitForMultipleObject windows API function
 int WaitForMultipleObjectsWrap(uli num_of_threads, HANDLE* handle_arr, uli time_ms, BOOL bWaitAll)
 {
 
@@ -112,7 +120,8 @@ int WaitForMultipleObjectsWrap(uli num_of_threads, HANDLE* handle_arr, uli time_
 	}
 	return SUCCESS;
 }
-
+//ipnut arguments : max_count - maximum to signal for the semapohre object, semaphore- handle to semaphore , initialcount- start value for the semaphore count
+//outpus arguments : int indicates if the function succeeded
 int CreateSemphoreWrap(int max_count, HANDLE* OUT semphore, int initialcount)
 {
 	*semphore = CreateSemaphoreA(
@@ -145,6 +154,10 @@ int CreateMutexWrap(BOOL bInitialOwner, HANDLE* OUT mutex)
 	return SUCCESS;
 }
 
+//input arguments : semaphore- handle to semaphore, name - The name of the semaphore object
+//output arguments : int that indicats if the function succeeded
+//functionality: this function wraps the OpenSemaphoreA windows API function
+
 int OpenSemphoreWrap(HANDLE* OUT semphore, const char* name)
 {
 	*semphore = OpenSemaphoreA(
@@ -159,7 +172,9 @@ int OpenSemphoreWrap(HANDLE* OUT semphore, const char* name)
 	}
 	return SUCCESS;
 }
-
+//input arguments : semaphore- handle to semaphore, Irelease-The amount by which the semaphore object's current count is to be increased
+//output arguments : int that indicats if the function succeeded
+//functionality: this function wraps the ReleaseSemaphore windows API function
 int ReleaseSemphoreWrap(HANDLE semphore, int lReleaseCount)
 {
 	int wait_code = ReleaseSemaphore(semphore, lReleaseCount, NULL);
@@ -170,6 +185,9 @@ int ReleaseSemphoreWrap(HANDLE semphore, int lReleaseCount)
 	}
 	return SUCCESS;
 }
+//input arguments : mutex - handle to mutex object
+//output arguments : int that indicats if the function succeeded
+//functionality: this function wraps the ReleaseMutex windows API function
 
 int ReleaseMutexeWrap(HANDLE mutex)
 {
@@ -182,7 +200,7 @@ int ReleaseMutexeWrap(HANDLE mutex)
 	return SUCCESS;
 }
 
-
+//// can we delete ???
 void TerminateThreadGracefully(HANDLE * my_thread )
 {
 	int ret_val = 0; 

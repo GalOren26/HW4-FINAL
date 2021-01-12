@@ -7,7 +7,7 @@
 #include "windows.h"
 #include "messages.h"
 
-void CheakArgs(int argc,int excepted_num_of_args);
+
 /*This function cheak if string is a number - used for validate the value of key in this code */
 BOOL CheakIsAnumber(char* str);
 /*input: pointer
@@ -57,10 +57,6 @@ int CheakHandle(HANDLE my_handle);
 if it does not manage to close , it exits with last error*/
 int CloseHandleWrap(HANDLE file);
 
-/* input: array of allocated memories, the function runs
-over the array and it dealocate it
-*/
-int FreeArray(void** arr, int len);
 
 /*input: array of handles and it's length,
 the function closes the handles in the array, if not it exit with LastError.

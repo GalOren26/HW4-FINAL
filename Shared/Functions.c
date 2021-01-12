@@ -7,19 +7,6 @@
 #include <stdlib.h>
 // ******** valiation of data and parms ************ 
 
-void CheakArgs(int argc, int excpted_num_of_args)
-{
-	if (argc < excpted_num_of_args)
-	{
-		printf("ERROR: Not enough input arguments\n");
-		exit(ERR_CODE_NOT_ENOUGH_ARGUMENTS);
-	}
-	if (argc > excpted_num_of_args)
-	{
-		printf("ERROR: Too many input arguments\n");
-		exit(ERR_CODE_TOO_MANY_ARGUMENTS);
-	}
-}
 
 int valid_PTR(void* ptr)
 {
@@ -107,7 +94,9 @@ int SetFilePointerWrap(HANDLE input_file, uli DistanceToMove, DWORD FromWhereToM
 	}
 	return SUCCESS;
 }
-
+//input arguments: input_file - handle , line-bto read
+//output files: int to indicate if the function succeeded or not
+//functionality: this function reads a line from input file
 int ReadLine(HANDLE input_file, char* line)
 {
 
@@ -139,7 +128,9 @@ int ReadLine(HANDLE input_file, char* line)
 	return NOT_VALID_INPUT;
 
 }
-
+//input arguments: str-The name of the file or device to be created or opened,mode -of opening the file , hfile - handle to the file
+//output arguments: int indicates if the funtion succeeded or not
+//functionality: this function wraps the createFileA windows Api function
 int OpenFileWrap(LPCSTR str, DWORD mode, HANDLE* OUT hFile)
 {
 	//CreateFileA wrap 
@@ -160,22 +151,10 @@ int CloseHandleWrap(HANDLE file)
 	}
 	return SUCCESS;
 }
-int FreeArray(void** arr, int len)
-{
-	int ret_val = 0;
-	ret_val = valid_PTR(arr);
-	if (ret_val != SUCCESS)
-	{
-		return ret_val;
-	}
-	for (int i = 0; i < len; i++)
-	{
-		if (arr[i] != NULL)
-			free(arr[i]);
-	}
-	free(arr);
-	return SUCCESS;
-}
+//input arguments: len -The maximum number of bytes to be read,file - a handle to file, my_file_buff- buffer to read the file to, 
+//NumberOfByesRead-A pointer to the variable that receives the number of bytes read when using a synchronous hFile parameter 
+//output arguments: int indicates if the funtion succeeded or not
+//functionality: this function wraps the readfile windows Api function
 int  ReadFileWrap(DWORD len, HANDLE file, char* my_file_buff, DWORD* NumberOfBytesRead)
 {
 	//WRAP TO ReadFile 
@@ -186,7 +165,10 @@ int  ReadFileWrap(DWORD len, HANDLE file, char* my_file_buff, DWORD* NumberOfByt
 	}
 	return SUCCESS;
 }
-
+//input arguments: len -The maximum number of bytes to be read,file - a handle to file, my_file_buff- buffer to read the file to, 
+//NumberOfByesRead-A pointe
+//output arguments: int indicates if the funtion succeeded or not
+//functionality: this function wraps the writeFile windows Api function
 int WriteFileWrap(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite)
 {
 	DWORD lpNumberOfBytesRead = 0;
@@ -227,7 +209,9 @@ int WriteLineString(HANDLE input_file, char line[])
 		return ret_val1;
 	return SUCCESS;
 }
-
+//input arguments: input_file - a file handle , offset_len -
+//output arguments: int indicates if the funtion succeeded or not
+//functionality: this function wraps the SetFilePointer windows Api function
 int SetEndOfFileWarp(HANDLE  input_file, uli offset_len, int mode)
 {
 	int ret_val = 0;
@@ -274,18 +258,3 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 }
 
 
-void my_strcpy(char* destination,  char* source)
-{
-	while (*source != '\0')
-	{
-		*destination++ = *source++;
-	}
-}
-
-
-
-
-
-//input: input_file- the file we want to move it's pointer, offst_len-distance to move
-//output:number-indicates whether the function succeeded or not
-//fuctionality : this function wraps the windows API SetEndOfFile function 

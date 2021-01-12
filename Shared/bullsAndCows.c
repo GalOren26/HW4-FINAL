@@ -36,34 +36,10 @@ int playerChoice() {
 	else
 		return 2;
 }
-//////
 
-//void gameResults(game_results* results, int game_status) {
-//	if (game_status == GAME) {
-//		printf("Bulls: %c\n", results->bulls);
-//		printf("Cows: %c\n", results->cows);
-//		printf("%s played: %s\n", results->oponent_name, results->opponent_move);
-//
-//	}
-//	if (game_status == TIE) {
-//		printf("It's a tie");
-//		return;
-//	}
-//	if (game_status == WIN) {
-//		printf("%s won!\n", results->player);
-//		printf("Opponent number was %s\n", results->player_move);
-//	}
-//}
-///////
-//
-//int otherPlayerQuit(char* message) {
-//	if (!strcmp(message, "SERVER_OPPONENT_QUIT")) {
-//		printf("Opponent quit.\n");
-//		return START_AGAIN;
-//	}
-//	else
-//		return CONTINUE;
-//}
+//input arguments - choose : an option of one of the menus , portNumber - the port number, ip - the ip
+//output arguments : none
+//functionality : this function prints the right message(out of 3) by a chosen state
 void showMenu(int choose, int portNumber, char* ip) {
 	//int decision;
 	switch (choose) {
@@ -85,10 +61,10 @@ void showMenu(int choose, int portNumber, char* ip) {
 		printf("2. Exit\n");
 		break;
 	}
-
-	//decision = playerChoice();
-	//return decision;
 }
+//input arguments - number - the player's initial number or the player's guess
+//output arguments : 1 for valid number an 0 for unvalid number
+//functionality : this function prints the right message(out of 3) by a chosen state
 int isValid(char* number) {
 	if (!isRightSize(number))
 		return 0;
@@ -98,30 +74,9 @@ int isValid(char* number) {
 		return 0;
 	return 1;
 }
-
-//this function gets the number from the user
-//char* chooseNumber() {
-//	char* guess = NULL;
-//	int i = 0, flag = 1;
-
-//	if (NULL == (guess = malloc((guess_size + 1) * sizeof(char)))) {
-//		printf("Fatal error: memory allocation failed (chooseNumber).\n");
-//		return NULL;
-//	}
-
-//	while (flag) {
-//		scanf_s("%s", guess, guess_size);
-		///validations:
-//		if (!isRightSize(guess))
-//			continue;
-//		if (!isOnlyDigits(guess))
-//			continue;
-//		if (!containsNoDuplicates(guess))
-//			continue;
-//		flag = 0;
-//	}
-//	return guess;
-//}
+//input arguments - number - the player's initial number or the player's guess
+//output arguments : true for valid number and false for unvalid number
+//functionality : this functionchecks if the number is in the right size( 4 chars)
 bool isRightSize(char* guess) {
 	if (guess_size!= strlen(guess)) {
 		printf("insert exactly 4 digits. please try again \n");
@@ -129,6 +84,9 @@ bool isRightSize(char* guess) {
 	}
 	return true;
 }
+//input arguments - number - the player's initial number or the player's guess
+//output arguments : true for valid number and false for unvalid number
+//functionality : this function checks if the number is just digits 
 bool isOnlyDigits(char* number) {
 	for (int i = 0; i < guess_size; i++) {
 		if (!isdigit(number[i])) {
@@ -138,10 +96,11 @@ bool isOnlyDigits(char* number) {
 	}
 	return true;
 }
+//input arguments - number - the player's initial number or the player's guess
+//output arguments : true for valid number and false for unvalid number
+//functionality : this function checks if the number contain the same number more than once
 bool containsNoDuplicates(char* guess)
 {
-	// If at any iteration we encounter 2
-	// same characters, return false
 	int len = strlen(guess);
 	for (int i = 0; i < len - 1; i++) {
 		for (int j = i + 1; j < len; j++) {
@@ -153,8 +112,10 @@ bool containsNoDuplicates(char* guess)
 	}
 	return true;
 }
-
-///we will call countBullsAndCows(number,guess, &bulls, &cows)
+//input arguments - number - the player's given number, guess- the player's guess, bulls - will be the number of same number in the same place at the "guess" and "number, coes- the number of the same number not in the 
+//right place in the "number" and "guess", return How many hits- true- to return number of bulls and coes and false for not to return
+//output arguments : true-if temp_bulls == guess_size(the player wins) or false for the inequality(the player didn't win)
+//functionality : this function operats one round for a player
 bool PlayRoundPlayer(char* number, char* guess, int* OUT bulls, int* OUT  cows,bool ReturnHowManyHits)
 {
 	int i;
