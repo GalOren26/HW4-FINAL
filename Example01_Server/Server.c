@@ -64,7 +64,7 @@ void MainServer(int port)
 		goto server_cleanup_1;
 	}
 	//bind to socket 
-	bindRes = bindWrap(&MainSocket, &service, sizeof(service));
+	bindRes = bindWrap(&MainSocket, &service, sizeof(service),port, SERVER_ADDRESS_STR);
 	if (bindRes == SOCKET_ERROR)
 		goto server_cleanup_2;
 
@@ -96,7 +96,7 @@ void MainServer(int port)
 	while (true)
 	{
 		if (Ind < 1)
-			printf("Waiting for a client to connect...\n\n");
+			printf("Waiting for a client to connect,listen on port %d...\n\n",port);
 
 		SOCKET AcceptSocket = accept(MainSocket, NULL, NULL);//TO-DO dISCCONENT this socket in exit.
 		if (AcceptSocket == INVALID_SOCKET)

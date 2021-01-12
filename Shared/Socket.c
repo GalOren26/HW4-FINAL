@@ -170,21 +170,21 @@ int Init_WinSocket(WSADATA* lp_wsa_data) {
 //	shutdown(AcceptSocket, SD_SEND);	
 //	closesocket(AcceptSocket); //Closing the socket, dropping the connection.
 //}
-int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service)
+int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service,int port,char*ip )
 {
 
 	unsigned long Address;
 	int bindRes;
-	Address = inet_addr(SERVER_ADDRESS_STR);
+	Address = inet_addr(ip);
 	if (Address == INADDR_NONE)
 	{
 		printf("The string \"%s\" cannot be converted into an ip address. ending program.\n",
-			SERVER_ADDRESS_STR);
+			ip);
 		return -1;
 	}
 	service->sin_family = AF_INET;
 	service->sin_addr.s_addr = Address;
-	service->sin_port = htons(SERVER_PORT);
+	service->sin_port = htons(port);
 
 	bindRes = bind(*socket, (SOCKADDR*)service, len_of_service);
 	if (bindRes == SOCKET_ERROR)

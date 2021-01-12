@@ -94,7 +94,7 @@ TransferResult_t ReceiveString( char** OutputStrPtr, SOCKET sd );
 //------------my functions----------------
 SOCKET createSocket();
 int Init_WinSocket(WSADATA* lp_wsa_data);
-int bindWrap(SOCKET* socket, SOCKADDR_IN * service, int len_of_service);
+int bindWrap(SOCKET* socket, SOCKADDR_IN* service, int len_of_service, int port, char* ip);
 
 
 

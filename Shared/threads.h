@@ -17,6 +17,7 @@ Authors:Amit Herman Raz Rajwan
 #define release ReleaseMutex
 
 #define TIME_OUT_THREADS 15*1000 // in ms
+//#define TimeOutUser 1000*60*10
 #define NUM_OF_WORKER_THREADS 2
 HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, LPVOID lpParam);

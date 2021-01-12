@@ -29,7 +29,7 @@ typedef enum
 #define NumOfClientThreads 2
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 
-int MainClient(int argc, char* argv[] );
+int MainClient(int port, char* ip, char* username);
 int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int SizeOfclientService, int portNumber, char* ip);
 //void CleanupWorkersThreadsSocketsClient();
 void exec_protocol(message* msg, SOCKET sender);

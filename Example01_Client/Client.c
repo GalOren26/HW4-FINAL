@@ -17,18 +17,26 @@ bool server_disconecnt = false;
 HANDLE client_decide_what_to_do;
 bool client_decice_exit = false;
 bool server_denied = false;
+int my_port;
+char my_ip[SIZE_OF_IP] = { 0 };
+char my_user_name[MAX_LEN_NAME_PLAYER] = { 0 };
 //---synch elements---
+struct timeval waitTime = { TIME_OUT_THREADS,0 };
+
 static DWORD RecvDataThread(void);
 static DWORD SendDataThread(void);
 //---threads declarations--- 
 
 
-int MainClient(int argc, char* argv[])
+int MainClient(int port, char* ip, char* username)
 {
 	//int port = atoi(argv[1]);
 	//int ret_val = create_event_simple(&Send_event);
 	/*if (ret_val != SUCCESS)
 		return ret_val;*/
+	strcpy(my_user_name, username);
+	strcpy(my_ip, ip);
+	my_port = port;
 	int ret_val = 0;
 	// TO-DO WARP WITH CREATE-SOCKET 
 	WSADATA wsaData; //Create a WSADATA object called wsaData.
@@ -51,10 +59,10 @@ int MainClient(int argc, char* argv[])
 	}
 
 	clientService.sin_family = AF_INET;
-	clientService.sin_addr.s_addr = inet_addr(SERVER_ADDRESS_STR); //Setting the IP address to connect to
-	clientService.sin_port = htons(SERVER_PORT); //Setting the port to connect to.
+	clientService.sin_addr.s_addr = inet_addr(ip); //Setting the IP address to connect to
+	clientService.sin_port = htons(port); //Setting the port to connect to.
 
-	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService), SERVER_PORT, SERVER_ADDRESS_STR);
+	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService), port, ip);
 	if (ret_val != SUCCESS)
 		goto clean2;
 
@@ -127,9 +135,9 @@ static DWORD RecvDataThread(void)
 			else {
 				server_disconecnt = true;
 				if (server_denied)
-					showMenu(DENIED, SERVER_PORT, SERVER_ADDRESS_STR);
+					showMenu(DENIED, my_port, my_ip);
 				else
-					showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+					showMenu(FAILURE, my_port, my_ip);
 				shutdown(m_socket, SD_SEND);
 				closesocket(m_socket);
 				m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -174,19 +182,21 @@ static DWORD SendDataThread(void)
 	char SendStr[MAX_LEN_MESSAGE] = { 0 };
 	char inputstr[MAX_LEN_MESSAGE] = { 0 };
 	int valid;
+	bool first_iteartion = true;
 	TransferResult_t send_result;
-	char user_name[MAX_LEN_MESSAGE] = { 0 };
+
 	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
 
 	//SendString("CLIENT_VERSUS", m_socket);  
-	printf("Insert username:\n");
-
 	while (1)
 	{
-		gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
-
 		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
 		//my_state = WANTTODISCONNECT;
+		if (!first_iteartion)
+			gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
+		else
+			first_iteartion = false;
+	
 		if (my_state == MENU) {
 			if (STRINGS_ARE_EQUAL(inputstr, "2")) {
 				my_state = WANTTODISCONNECT;
@@ -210,7 +220,7 @@ static DWORD SendDataThread(void)
 				{
 					if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR)
 					{
-						showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+						showMenu(FAILURE, my_port, my_ip);
 						continue;
 					}
 					server_disconecnt = false;
@@ -233,15 +243,16 @@ static DWORD SendDataThread(void)
 		//change state 
 		if (my_state == GetName)
 		{
-			//	user_name = getUserName();
-			if (user_name[0] == 0)
-				strcpy(user_name, inputstr);
-			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", user_name);
+			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", my_user_name);
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
+			waitTime.tv_sec =  TIME_OUT_THREADS;
+			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		}
 		else if (my_state == WANTTOPLAY) {
 			sprintf(SendStr, "%s", "CLIENT_VERSUS");
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
+			waitTime.tv_sec = 2*TIME_OUT_THREADS;
+			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		}
 		else if (my_state == GetSecret)
 		{
@@ -249,6 +260,8 @@ static DWORD SendDataThread(void)
 			if (valid) {
 				sprintf(SendStr, "%s:%s", "CLIENT_SETUP", inputstr);
 				send_result = SendString(SendStr, m_socket);//to do-cheack return value
+				waitTime.tv_sec = 0;//for blocking wait for user
+				setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 			}
 			continue;
 		}
@@ -258,6 +271,8 @@ static DWORD SendDataThread(void)
 			if (valid) {
 				sprintf(SendStr, "%s:%s", "CLIENT_PLAYER_MOVE", inputstr);
 				send_result = SendString(SendStr, m_socket);//to do-cheack return value
+				waitTime.tv_sec = 0;//for blocking wait for user
+				setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 			}
 			continue;
 		}
@@ -265,7 +280,10 @@ static DWORD SendDataThread(void)
 			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED");
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
 			shutdown(m_socket, SD_SEND);
+			waitTime.tv_sec = TIME_OUT_THREADS;
+			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		}
+	
 
 	}
 	return 1;
@@ -275,23 +293,25 @@ static DWORD SendDataThread(void)
 void exec_protocol(message* msg, SOCKET sender) {
 	int exit = 0;
 	int i = 0;
-	int portNumber = SERVER_PORT;
-	char ip = SERVER_ADDRESS_STR;
 	//char type = (char)(msg->ServerType);
 	switch (msg->ServerType) {
 	case SERVER_MAIN_MENU:
-		showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
+		showMenu(MAIN, my_port, my_ip);
+		waitTime.tv_sec = 0;
+		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		my_state = MENU;
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_APPROVED:
-		printf("Connected to server on %s : %d\nWelcome to server :)\n\n", SERVER_ADDRESS_STR, SERVER_PORT);
+		printf("Connected to server on %s : %d\nWelcome to server :)\n\n", my_ip, my_port);
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DENIED:
 		//disconnect
 		printf("%s\n", msg->message_arguments[0]);
 		server_denied = true;
+		waitTime.tv_sec = 0;
+		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		break;
 	case SERVER_INVITE:
 		printf("Game is on!\n\n");
@@ -299,10 +319,14 @@ void exec_protocol(message* msg, SOCKET sender) {
 	case SERVER_SETUP_REQUSET:
 		printf("Please choose a 4-digits number, with no duplicates!\n\n");
 		my_state = GetSecret;
+		waitTime.tv_sec = 0;//for blocking wait for user
+		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		break;
 	case SERVER_PLAYER_MOVE_REQUEST:
 		printf("Please choose your guess!\n");
 		my_state = GetGuess;
+		waitTime.tv_sec = 0;//for blocking wait for user
+		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		//number = chooseNumber();
 		//SendString(number, sender);
 		break;
