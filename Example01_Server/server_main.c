@@ -3,6 +3,7 @@
 
 int main(int argc,char * argv [] )
 {
+
 	//CheakArgs(argc, 2);
 	if (argc == 2)
 	{

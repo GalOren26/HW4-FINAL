@@ -37,7 +37,7 @@ TransferResult_t ReceiveString(char** OutputStrPtr, SOCKET sd)
 	int TotalStringSizeInBytes;
 	TransferResult_t RecvRes;
 	char* StrBuffer = NULL;
-
+	
 	if ((OutputStrPtr == NULL) || (*OutputStrPtr != NULL))
 	{
 		printf("The first input to ReceiveString() must be "
@@ -83,6 +83,7 @@ TransferResult_t ReceiveBuffer(char* OutputBuffer, int BytesToReceive, SOCKET sd
 	char* CurPlacePtr = OutputBuffer;
 	int BytesJustTransferred;
 	int RemainingBytesToReceive = BytesToReceive;
+	
 
 	while (RemainingBytesToReceive > 0)
 	{
@@ -150,6 +151,7 @@ int Init_WinSocket(WSADATA* lp_wsa_data) {
 
 	return SUCCESS;
 }
+
 
 //int SocketGetLastError() {
 //	return WSAGetLastError();
