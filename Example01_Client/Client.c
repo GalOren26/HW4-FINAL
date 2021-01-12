@@ -16,6 +16,7 @@ state my_state = GetName;
 bool server_disconecnt = false;
 HANDLE client_decide_what_to_do;
 bool client_decice_exit = false;
+bool server_denied = false;
 //---synch elements---
 static DWORD RecvDataThread(void);
 static DWORD SendDataThread(void);
@@ -31,9 +32,9 @@ int MainClient(int argc, char* argv[])
 	int ret_val = 0;
 	// TO-DO WARP WITH CREATE-SOCKET 
 	WSADATA wsaData; //Create a WSADATA object called wsaData.
-	ret_val=create_event_simple(&client_decide_what_to_do);
-		if(ret_val!=SUCCESS)
-			goto clean00;
+	ret_val = create_event_simple(&client_decide_what_to_do);
+	if (ret_val != SUCCESS)
+		goto clean00;
 	ret_val = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ret_val != NO_ERROR)
 	{
@@ -56,7 +57,7 @@ int MainClient(int argc, char* argv[])
 	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService), SERVER_PORT, SERVER_ADDRESS_STR);
 	if (ret_val != SUCCESS)
 		goto clean2;
-	printf("Connected to server on %s : %d\n", SERVER_ADDRESS_STR, SERVER_PORT);
+
 
 
 	hThread[0] = CreateThreadSimple((LPTHREAD_START_ROUTINE)SendDataThread, NULL, NULL);
@@ -65,6 +66,7 @@ int MainClient(int argc, char* argv[])
 		printf("cannot open send Thread\n");
 		goto clean3;
 	}
+
 	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread, NULL, NULL);
 	if (hThread[1] == NULL)
 	{
@@ -118,13 +120,19 @@ static DWORD RecvDataThread(void)
 		if (RecvRes == TRNS_FAILED || RecvRes == TRNS_DISCONNECTED)
 		{
 			my_state = MENU;
-			if(client_decice_exit)
+			if (client_decice_exit)
 			{
 				goto clean1;
 			}
 			else {
 				server_disconecnt = true;
-				showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+				if (server_denied)
+					showMenu(DENIED, SERVER_PORT, SERVER_ADDRESS_STR);
+				else
+					showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
+				shutdown(m_socket, SD_SEND);
+				closesocket(m_socket);
+				m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 				WaitForSingleObject(client_decide_what_to_do, INFINITE);
 			}
 		}
@@ -151,7 +159,7 @@ clean1:
 	//and after his it 
 	//close the socket otherwise- the server inatiate the shutdown so the client reply with shutdown back and
 	//then close the socket. 
-	if(server_disconecnt)
+	if (server_disconecnt)
 		shutdown(m_socket, SD_SEND);
 	closesocket(m_socket);
 	return RecvRes;
@@ -167,7 +175,7 @@ static DWORD SendDataThread(void)
 	char inputstr[MAX_LEN_MESSAGE] = { 0 };
 	int valid;
 	TransferResult_t send_result;
-	char* user_name = NULL;
+	char user_name[MAX_LEN_MESSAGE] = { 0 };
 	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
 
 	//SendString("CLIENT_VERSUS", m_socket);  
@@ -200,7 +208,7 @@ static DWORD SendDataThread(void)
 			else if (STRINGS_ARE_EQUAL(inputstr, "1")) {
 				if (server_disconecnt)
 				{
-					if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR);
+					if (connect(m_socket, (SOCKADDR*)&clientService, sizeof(clientService)) == SOCKET_ERROR)
 					{
 						showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
 						continue;
@@ -208,11 +216,15 @@ static DWORD SendDataThread(void)
 					server_disconecnt = false;
 					client_decice_exit = false;
 					SetEvent(client_decide_what_to_do);
-					showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-					continue;
+					my_state = GetName;
 				}
-
-				my_state = WANTTOPLAY;
+				else
+				{
+					my_state = WANTTOPLAY;
+				}
+			}
+			else {
+				printf(" invalid input please type 1 or 2 ! ;)\n");
 			}
 		}
 
@@ -222,8 +234,9 @@ static DWORD SendDataThread(void)
 		if (my_state == GetName)
 		{
 			//	user_name = getUserName();
-			//I need to remember to free user_name
-			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", inputstr);
+			if (user_name[0] == 0)
+				strcpy(user_name, inputstr);
+			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", user_name);
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
 		}
 		else if (my_state == WANTTOPLAY) {
@@ -272,15 +285,13 @@ void exec_protocol(message* msg, SOCKET sender) {
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_APPROVED:
-		printf("welcome to the server\n\n");
+		printf("Connected to server on %s : %d\nWelcome to server :)\n\n", SERVER_ADDRESS_STR, SERVER_PORT);
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DENIED:
 		//disconnect
-
-		server_disconecnt = true;
-		showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
-		my_state = MENU;
+		printf("%s\n", msg->message_arguments[0]);
+		server_denied = true;
 		break;
 	case SERVER_INVITE:
 		printf("Game is on!\n\n");

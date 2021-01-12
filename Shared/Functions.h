@@ -17,7 +17,7 @@ int valid_PTR(void*);
 
 //------------------files--------------------
 
-/*the function is a wrap of the createfileA function it gets as an input the file name and the mode,
+/*the function is a wrap of the createfileA function it \ as an input the file name and the mode,
 it returns the handle of the opened file*/
 int OpenFileWrap(LPCSTR str, DWORD mode, HANDLE* OUT hFile);
 
