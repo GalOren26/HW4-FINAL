@@ -1,9 +1,4 @@
-/*
-Name:threads.h
-Description:Thread and processes module header.
-Authors:Amit Herman Raz Rajwan
 
-*/
 
 #ifndef _THREADS_H_
 #define _THREADS_H_

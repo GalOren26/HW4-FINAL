@@ -134,7 +134,7 @@ SOCKET createSocket() {
 	WSADATA wsaData;
 	int ret_val=Init_WinSocket(&wsaData); 
 	if (ret_val != SUCCESS)
-		return ret_val; 
+		return INVALID_SOCKET; 
 	return socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 }

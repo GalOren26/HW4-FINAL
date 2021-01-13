@@ -39,6 +39,10 @@ void CleanupWorkersThreads();
 int InitSyncElements();
 
 
+int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket);
+int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile, char  My_Secret[], char Other_Secret[]);
+int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line);
+int player2_read_write_file(char* input_line, char* OUT output_line);
 
 
 #endif // SOCKET_EXAMPLE_SERVER_H

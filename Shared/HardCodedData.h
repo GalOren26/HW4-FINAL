@@ -50,21 +50,4 @@ enum ERRORS_ENUM {
 };
 
 
-//typedef enum {
-//	ARRAY,
-//	HANDLE
-//}element_type ;
-//typedef struct {
-//	void* array_handle;
-//	int count;
-//	element_type type;
-//}MemoryTrackerElement;
-
-//typedef struct {
-//	MemoryTrackerElement* array_tracker;
-//	int count;
-//	uli max_size  ;
-//}MemoryTracker;
-
-
 #endif

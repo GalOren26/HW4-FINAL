@@ -1,36 +1,31 @@
 #include "Client.h"
 #include "bullsAndCows.h"
+
 //#include <winsock.h>
 //---resources---
 
-
-
 SOCKET m_socket = 0;
 SOCKADDR_IN clientService;
-//HANDLE Send_event;
 HANDLE hThread[NumOfClientThreads] = { NULL,NULL };
 state my_state = GetName;
-bool server_disconecnt = false;
-HANDLE client_decide_what_to_do;
-bool client_decice_exit = false;
-bool server_denied = false;
+//---- socket resources--- 
 int my_port;
 char my_ip[SIZE_OF_IP] = { 0 };
 char my_user_name[MAX_LEN_NAME_PLAYER] = { 0 };
 //---synch elements---
 struct timeval waitTime = { TIME_OUT_THREADS,0 };
-
+HANDLE client_decide_what_to_do;
+//--flags 
+bool server_disconecnt = false;
+bool client_decice_exit = false;
+bool server_denied = false;
+//---threads declarations--- 
 static DWORD RecvDataThread(void);
 static DWORD SendDataThread(void);
-//---threads declarations--- 
 
 
 int MainClient(int port, char* ip, char* username)
 {
-	//int port = atoi(argv[1]);
-	//int ret_val = create_event_simple(&Send_event);
-	/*if (ret_val != SUCCESS)
-		return ret_val;*/
 	strcpy(my_user_name, username);
 	strcpy(my_ip, ip);
 	my_port = port;
@@ -40,45 +35,36 @@ int MainClient(int port, char* ip, char* username)
 	ret_val = create_event_simple(&client_decide_what_to_do);
 	if (ret_val != SUCCESS)
 		goto clean00;
-	ret_val = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (ret_val != NO_ERROR)
-	{
-		printf("Error at WSAStartup()\n");
-		goto clean0;
-	}
 
-	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	// Check for errors to ensure that the socket is a valid socket.
-	if (m_socket == INVALID_SOCKET) {
-		ret_val = m_socket;
-		printf("Error at socket(): %ld\n", WSAGetLastError());
-		goto clean1;
-	}
+	// start the socket creation 
+	m_socket = createSocket();
+	if (m_socket==INVALID_SOCKET)
+		goto clean0;
 
 	clientService.sin_family = AF_INET;
 	clientService.sin_addr.s_addr = inet_addr(ip); //Setting the IP address to connect to
 	clientService.sin_port = htons(port); //Setting the port to connect to.
-
+	///connect to server in while loop or user type 2- exit 
 	ret_val = ConnectToServerWithUI(&m_socket, (SOCKADDR*)(&clientService), sizeof(clientService), port, ip);
 	if (ret_val != SUCCESS)
 		goto clean2;
-
-
-
+	// get data from user and acoording to state machine send correspondig message to server 
 	hThread[0] = CreateThreadSimple((LPTHREAD_START_ROUTINE)SendDataThread, NULL, NULL);
 	if (hThread[0] == NULL)
 	{
 		printf("cannot open send Thread\n");
 		goto clean3;
 	}
-
+	// recive date drom serve and show ui to user acoording to the message of the server . 
 	hThread[1] = CreateThreadSimple((LPTHREAD_START_ROUTINE)RecvDataThread, NULL, NULL);
 	if (hThread[1] == NULL)
 	{
+		// wait time out therad to recive and if dosent succeded close brutely by terminate thread.  
 		TerminateThreadGracefully(hThread[0]);
 		printf("cannot open recv Thread");
 		goto clean3;
 	}
+	// wait for at least one therad to finish and then close the other with 	TerminateThreadGracefully
 	ret_val = WaitForMultipleObjectsWrap(NumOfClientThreads, hThread, INFINITE, FALSE);
 	if (ret_val != SUCCESS)
 	{
@@ -87,12 +73,12 @@ int MainClient(int port, char* ip, char* username)
 	}
 	ret_val = SUCCESS;
 
-	////must remember to free user_name
-
-clean4:	// close handles 
-	Close_Threads(NumOfClientThreads, hThread);
+clean4:	// close theards+handels 
+	TerminateThreadGracefully(hThread[0]);
+	TerminateThreadGracefully(hThread[1]);
 clean3://in this case the thared will be close this socket 
 	m_socket = 0;
+
 	//Clean 2 means that the initial connection failed, so only the socket needes to be closed
 clean2:
 	if (m_socket != NULL)
@@ -144,7 +130,7 @@ static DWORD RecvDataThread(void)
 		}
 		else
 		{
-			printf("%s\n", AcceptedStr);
+			//printf("%s\n", AcceptedStr);
 			new_message = process_Message(AcceptedStr, 0);
 			if ((int)new_message == -1)
 			{
@@ -152,9 +138,16 @@ static DWORD RecvDataThread(void)
 
 			}
 			exec_protocol(new_message, m_socket);
-			free(AcceptedStr);
-			AcceptedStr = NULL;
-
+			if (AcceptedStr != NULL)
+			{
+				free(AcceptedStr);
+				AcceptedStr = NULL;
+			}
+			if (new_message != NULL)
+			{
+				free(new_message);
+				new_message = NULL;
+			}
 		}
 	}
 	//clean 1 free the product of process_message
@@ -168,6 +161,7 @@ clean1:
 	if (server_disconecnt)
 		shutdown(m_socket, SD_SEND);
 	closesocket(m_socket);
+	m_socket = 0;
 	return RecvRes;
 }
 
@@ -177,16 +171,12 @@ clean1:
 //funcionality: this function is operated by ta thread that recivec and send data from the user 
 static DWORD SendDataThread(void)
 {
-	//to -do free message
 	int ret_val1;
 	char SendStr[MAX_LEN_MESSAGE] = { 0 };
 	char inputstr[MAX_LEN_MESSAGE] = { 0 };
 	int valid;
 	bool first_iteartion = true;
 	TransferResult_t send_result;
-		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
-		//my_state = WANTTODISCONNECT;
-
 	while (1)
 	{
 		if (!first_iteartion)
@@ -370,7 +360,3 @@ int ConnectToServerWithUI(SOCKET* my_socket, SOCKADDR* my_clientService, int Siz
 	}
 	return SUCCESS;
 }
-
-//TO-DO send create mutex cheach if server disconnect.
-//TO-DO wait for 15 sec ! 
-//to do add event client aprooved

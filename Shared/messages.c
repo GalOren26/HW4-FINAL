@@ -1,11 +1,5 @@
 
 
-/*
-*	Name:messages.c
-*	messages module implementation
-*/
-
-
 #include "messages.h"
 
 const char* server_messages[] = { "SERVER_MAIN_MENU",
@@ -18,7 +12,7 @@ const char* server_messages[] = { "SERVER_MAIN_MENU",
 							   "SERVER_WIN",
 							   "SERVER_DRAW",
 							   "SERVER_NO_OPPONENTS",
-							   "SERVER_OPPONENT_QUIT" }; //extern because client.c uses this too
+							   "SERVER_OPPONENT_QUIT" };
 
 
 const char* client_messges[] = { "CLIENT_REQUEST",
@@ -36,34 +30,6 @@ void delete_message(message* lp_msg) {
 	free(lp_msg);
 }
 
-
-///*	Functions that handle particular incoming messages	*/
-//int send_message_server(message* lp_message, SOCKET s_target) {
-//
-//	TransferResult_t SendRes;
-//	char* SendStr = NULL;
-//
-//	SendStr = (char*)malloc(1 + strlen(lp_message->message_arguments));
-//	if (SendStr == NULL) {
-//
-//		printf("Allocation error\n");
-//		return 0;
-//	}
-//	strcat(SendStr, lp_message->message_arguments);
-//	SendRes = SendString(SendStr, s_target);
-//	free(SendStr);
-//	if (SendRes == TRNS_FAILED)
-//	{
-//		printf("Service socket error\n");
-//		closesocket(s_target);
-//		return 0;
-//	}
-//	return 1;
-//}
-
-
-
-/*	Utility functions that support other function for general things	*/
 
 //input arguments :message type - indicates which message we handle, is_server- indicates if this is a server or a client
 int get_message_code(const char* message_type, int is_server) {

@@ -1,7 +1,7 @@
 
 #include "Server.h"
 
-
+#include <stdlib.h>
 /*oOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoOoO*/
 //---resources---
 HANDLE ThreadHandles[NUM_OF_WORKER_THREADS] = { 0 };
@@ -21,15 +21,7 @@ HANDLE player2Event;
 
 static DWORD ServiceThread(int* me);
 static DWORD InputExitThread(SOCKET* t_socket);
-// threads function 
-int WaitForUser(HANDLE player_event);
-void CleanupWorkersThreads();
-int FindFirstUnusedThreadSlot();
-int InitSyncElements();
-int PlayRound(message* lp_message, int* round, int myIndex, char* My_Secret, char* Other_Secret, SOCKET* t_socket);
-int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bool* OUT IOpenTheFile, char  My_Secret[], char Other_Secret[]);
-int player1_read_write_file(char* input_line, char* header_message, char* OUT output_line);
-int player2_read_write_file(char* input_line, char* OUT output_line);
+
 
 void MainServer(int port)
 {
@@ -130,6 +122,7 @@ void MainServer(int port)
 			}
 		}
 	}
+
 server_cleanup_3:
 	//clean up all threads
 	CleanupWorkersThreads();
@@ -146,6 +139,7 @@ server_cleanup_0:
 	CloseHandle(file_mutex);
 	CloseHandle(player1Event);
 	CloseHandle(player2Event);
+
 }
 
 //Service thread is the thread that opens for each successful client connection and "talks" to the client.
@@ -463,21 +457,7 @@ int ManageMessageReceived(message* lp_message, int myIndex, SOCKET* t_socket, bo
 //input: player_event- a handle
 //outputs : int indicats if the function succeeded or not
 //functionality : this function manages waiting for a user
-int WaitForUser(HANDLE player_event) {
-	int res = 0;
-	while (true)
-	{
-		res = WaitForSingleObject(player_event, TIME_OUT_THREAD / 2);
-		if (res == WAIT_OBJECT_0)
-		{
-			return SUCCESS;
-		}
-		else if (ServerInitateShutDown == true)
-		{
-			return exitUser;
-		}
-	}
-}
+
 //input arguments: input_line- the input chars , header -header of the message, output_line- the line will be written by the function to this buffer
 //output arguments: int indicates if the function succeeded or not
 //functionality : this function handles the reading and writing to the file of player 1

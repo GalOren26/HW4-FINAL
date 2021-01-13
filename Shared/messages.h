@@ -1,5 +1,4 @@
-//Name:messages.h
-//Description: headers for the message module
+
 #ifndef _MESSAGES_H
 #define _MESSAGES_H
 #define _WINSOCKAPI_ 
@@ -54,7 +53,6 @@ typedef struct  {
 	int num_of_arguments;
 
 }message;
-
 
 
 
