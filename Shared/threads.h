@@ -23,9 +23,9 @@ HANDLE CreateThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	LPDWORD p_thread_id, LPVOID lpParam);
 
 int Init_Threads(int N, LPTHREAD_START_ROUTINE p_start_routine, HANDLE p_thread_handles[], DWORD p_thread_ids[]);
-int Close_Threads(int N, HANDLE p_thread_handles[]);
 void KillThreads(HANDLE h_Threads[], int num_of_threads);
 
+int Close_Threads(int N, HANDLE* p_thread_handles);
 
 //------------------process and threads 
 

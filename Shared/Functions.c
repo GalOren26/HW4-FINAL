@@ -258,3 +258,11 @@ int SetEofAccordingToText( HANDLE input_file, char* string )
 }
 
 
+void my_strcpy(char* destination, char* source)
+{
+	while (*source != '\0')
+	{
+		*destination++ = *source++;
+	}
+}
+

@@ -22,7 +22,6 @@ struct timeval waitTime = { TIME_OUT_THREADS,0 };
 
 static DWORD RecvDataThread(void);
 static DWORD SendDataThread(void);
-struct timeval waitTime = { 15000,0 };
 //---threads declarations--- 
 
 
@@ -185,36 +184,16 @@ static DWORD SendDataThread(void)
 	int valid;
 	bool first_iteartion = true;
 	TransferResult_t send_result;
-<<<<<<< HEAD
-
-	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
-
-	//SendString("CLIENT_VERSUS", m_socket);  
-	while (1)
-	{
 		//if (STRINGS_ARE_EQUAL(SendStr, "2"));
 		//my_state = WANTTODISCONNECT;
+
+	while (1)
+	{
 		if (!first_iteartion)
 			gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
 		else
 			first_iteartion = false;
-	
-=======
-<<<<<<< HEAD
-	char* user_name = NULL;
-	 
-=======
-	char user_name[MAX_LEN_MESSAGE] = { 0 };
-	/*SendString("CLIENT_REQUEST:gal", m_socket);*/
 
-	//SendString("CLIENT_VERSUS", m_socket);  
->>>>>>> ea19d67508b5dd8b1ed85947fe2699a91e825bae
-	printf("Insert username:\n");
-
-	while (1)
-	{
-		gets_s(inputstr, sizeof(inputstr)); //Reading a string from the keyboard
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		if (my_state == MENU) {
 			if (STRINGS_ARE_EQUAL(inputstr, "2")) {
 				my_state = WANTTODISCONNECT;
@@ -246,9 +225,6 @@ static DWORD SendDataThread(void)
 					SetEvent(client_decide_what_to_do);
 					my_state = GetName;
 				}
-<<<<<<< HEAD
-				my_state = WANTTOPLAY;
-=======
 				else
 				{
 					my_state = WANTTOPLAY;
@@ -256,44 +232,20 @@ static DWORD SendDataThread(void)
 			}
 			else {
 				printf(" invalid input please type 1 or 2 ! ;)\n");
->>>>>>> ea19d67508b5dd8b1ed85947fe2699a91e825bae
 			}
 		}
 		if (my_state == GetName)
 		{
-<<<<<<< HEAD
 			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", my_user_name);
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
 			waitTime.tv_sec =  TIME_OUT_THREADS;
 			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
-<<<<<<< HEAD
-			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", inputstr);
-			send_result = SendString(SendStr, m_socket);//to do-cheack return value	
-			if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval)) < 0) {
-				showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-			}
-=======
-			//	user_name = getUserName();
-			if (user_name[0] == 0)
-				strcpy(user_name, inputstr);
-			sprintf(SendStr, "%s:%s", "CLIENT_REQUEST", user_name);
-			send_result = SendString(SendStr, m_socket);//to do-cheack return value
->>>>>>> ea19d67508b5dd8b1ed85947fe2699a91e825bae
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		}
 		else if (my_state == WANTTOPLAY) {
 			sprintf(SendStr, "%s", "CLIENT_VERSUS");
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
-<<<<<<< HEAD
 			waitTime.tv_sec = 2*TIME_OUT_THREADS;
 			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
-			waitTime.tv_sec = 30000;
-			if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval)) < 0) {
-				showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-			}
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		}
 		else if (my_state == GetSecret)
 		{
@@ -301,15 +253,8 @@ static DWORD SendDataThread(void)
 			if (valid) {
 				sprintf(SendStr, "%s:%s", "CLIENT_SETUP", inputstr);
 				send_result = SendString(SendStr, m_socket);//to do-cheack return value
-<<<<<<< HEAD
 				waitTime.tv_sec = 0;//for blocking wait for user
 				setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
-				waitTime.tv_sec = 0;
-				if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval)) < 0) {
-					showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-				}
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 			}
 			continue;
 		}
@@ -319,25 +264,14 @@ static DWORD SendDataThread(void)
 			if (valid) {
 				sprintf(SendStr, "%s:%s", "CLIENT_PLAYER_MOVE", inputstr);
 				send_result = SendString(SendStr, m_socket);//to do-cheack return value
-<<<<<<< HEAD
-				waitTime.tv_sec = 0;//for blocking wait for user
-				setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
 				waitTime.tv_sec = 0;
-				if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval)) < 0) {
-					showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-				}
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
+				setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 			}
 			continue;
 		}
 		else if (my_state == WANTTODISCONNECT) {
 			sprintf(SendStr, "%s", "CLIENT_DISCONNECTED");
 			send_result = SendString(SendStr, m_socket);//to do-cheack return value
-			waitTime.tv_sec = 15000;
-			if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*) & waitTime, sizeof(struct timeval)) < 0) {
-				showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-			}
 			shutdown(m_socket, SD_SEND);
 			waitTime.tv_sec = TIME_OUT_THREADS;
 			setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
@@ -353,51 +287,25 @@ static DWORD SendDataThread(void)
 void exec_protocol(message* msg, SOCKET sender) {
 	int exit = 0;
 	int i = 0;
-<<<<<<< HEAD
+
 	//char type = (char)(msg->ServerType);
 	switch (msg->ServerType) {
 	case SERVER_MAIN_MENU:
 		showMenu(MAIN, my_port, my_ip);
 		waitTime.tv_sec = 0;
 		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
-	int portNumber = SERVER_PORT;
-	char ip = SERVER_ADDRESS_STR;
-	switch (msg->ServerType) {
-	case SERVER_MAIN_MENU:
-		showMenu(MAIN, SERVER_PORT, SERVER_ADDRESS_STR);
-		waitTime.tv_sec = 0;
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		my_state = MENU;
 		break;
 	case SERVER_APPROVED:
-<<<<<<< HEAD
 		printf("Connected to server on %s : %d\nWelcome to server :)\n\n", my_ip, my_port);
-=======
-<<<<<<< HEAD
-		printf("welcome to the server\n\n");
-		break;
-	case SERVER_DENIED:
-		//disconnect
-		server_disconecnt = true;
-		waitTime.tv_sec = 0;
-		showMenu(FAILURE, SERVER_PORT, SERVER_ADDRESS_STR);
-		my_state = MENU;
-=======
-		printf("Connected to server on %s : %d\nWelcome to server :)\n\n", SERVER_ADDRESS_STR, SERVER_PORT);
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		//my_state = WANTTOPLAY;
 		break;
 	case SERVER_DENIED:
 		//disconnect
 		printf("%s\n", msg->message_arguments[0]);
 		server_denied = true;
-<<<<<<< HEAD
 		waitTime.tv_sec = 0;
 		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
-=======
->>>>>>> ea19d67508b5dd8b1ed85947fe2699a91e825bae
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		break;
 	case SERVER_INVITE:
 		printf("Game is on!\n\n");
@@ -411,13 +319,10 @@ void exec_protocol(message* msg, SOCKET sender) {
 	case SERVER_PLAYER_MOVE_REQUEST:
 		printf("Please choose your guess!\n");
 		my_state = GetGuess;
-<<<<<<< HEAD
 		waitTime.tv_sec = 0;//for blocking wait for user
 		setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*)&waitTime, sizeof(struct timeval));
 		//number = chooseNumber();
 		//SendString(number, sender);
-=======
->>>>>>> 7cbcf022a4a06fb408a9a2162929a1bb6b9cbdc3
 		break;
 	case SERVER_GAME_RESULTS:
 		printf("you get:\nbulls:%s\ncows:%s\n\n%s played %s.\n\n", msg->message_arguments[0], msg->message_arguments[1], msg->message_arguments[2], msg->message_arguments[3]);
